@@ -53,6 +53,23 @@ option(NATIVE "Optimize for native architecture" OFF)
 option(STRICT "Use strict warning flags" OFF)
 option(NOVA_SIMD "Build plugins with nova-simd support." ON)
 
+# improve error checking
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    # GCC standard strict warning block
+    add_compile_options(-Wall -Wextra)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # Clang specific warning block (including the inline check)
+    add_compile_options(-Wall -Wextra -Wundefined-inline)
+endif()
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+    # Explicitly append to global shared and module linker string configurations
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -Wl,--no-undefined")
+elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin") # macOS
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-undefined,error")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -Wl,-undefined,error")
+endif()
+
 ####################################################################################################
 # include libraries
 

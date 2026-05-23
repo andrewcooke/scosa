@@ -1,16 +1,18 @@
 EuCosa : UGen {
     
-    *ar { |trig = 0.0, divider = 1.0|
-        ^this.multiNew('audio', trig, divider)
+    *ar { |trig = 0.0, length = 16.0, beats = 4.0, thresh = 0.25|
+        ^this.multiNew('audio', trig, length, beats, thresh)
     }
 	
     checkInputs {
         if (inputs[0].rate != 'audio') {
             ^"EuCosa trigger input must be audio rate (ar).";
         };
-        if (inputs[1].rate != 'control') {
-            ^"EuCosa divider input must be control rate (kr).";
-        };
+		(1..3).do { |i|
+			if (inputs[i].rate != 'control') {
+				^"EuCosa input " ++ i ++ " must be control rate (kr).";
+			};
+		}
         ^this.checkValidInputs
     }
 	
