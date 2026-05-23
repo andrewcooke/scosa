@@ -21,6 +21,81 @@ examples::
 
 code::
 
-{ EuCosa.ar(/* TODO */) }.play
+(
+s.boot;
+s.waitForBoot {
+    var window, frequencySlider, dividerSlider, frequencyLabel, dividerLabel;
+    
+    // 1. Allocate a Control Bus specifically for the divider factor
+    ~dividerBus = Bus.control(s, 1);
+    ~dividerBus.set(1); // Default to divide-by-1
+
+    s.sync; // Wait for the bus allocation to finish on the server
+
+    // 2. Define the Synthesis Node
+    ~tickSynth = {
+        // Grab the frequency argument (mapped to slider 1)
+        var freq = \freq.kr(10); 
+        
+        // Grab the divider factor from our control bus input
+        var divFactor = ~dividerBus.kr; 
+        
+        // Generate raw audio-rate tick impulses
+        var originalTicks = Impulse.ar(freq);
+        
+        // Pass them through your custom plugin
+        var dividedTicks = EuCosa.ar(originalTicks, divFactor);
+        
+        // Output Channel 0 (Left): Original Ticks
+        // Output Channel 1 (Right): Divided Ticks
+        [originalTicks, dividedTicks] * 0.4;
+    }.play;
+
+    s.sync;
+    s.scope(numChannels: 2); // Open a 2-channel stethoscope to view both lines
+
+    // 3. Construct the GUI Window
+    window = Window("EuCosa Plugin Controller", Rect(200, 200, 400, 180));
+    window.front;
+    window.view.decorator = FlowLayout(window.view.bounds, 10@10, 10@10);
+
+    // --- SLIDER 1: TICK FREQUENCY ---
+    frequencyLabel = StaticText(window, Rect(0, 0, 380, 20))
+        .string_("Tick Frequency: 10 Hz");
+        
+    frequencySlider = Slider(window, Rect(0, 0, 380, 30))
+        .value_(0.1) // Initial normalized slider position
+        .action_({ |sl|
+            // Map 0.0-1.0 slider value exponentially from 1Hz to 500Hz
+            var hz = sl.value.linexp(0.0, 1.0, 1.0, 500.0).round(0.1);
+            frequencyLabel.string_("Tick Frequency: " ++ hz ++ " Hz");
+            
+            // Send the new frequency directly to the running synth node
+            ~tickSynth.set(\freq, hz);
+        });
+
+    // --- SLIDER 2: DIVIDER VALUE ---
+    dividerLabel = StaticText(window, Rect(0, 0, 380, 20))
+        .string_("Divider Factor (N): 1");
+        
+    dividerSlider = Slider(window, Rect(0, 0, 380, 30))
+        .value_(0.0) // Initial normalized slider position
+        .action_({ |sl|
+            // Map 0.0-1.0 slider value linearly to integers from 1 to 16
+            var n = sl.value.linlin(0.0, 1.0, 1.0, 16.0).round(1);
+            dividerLabel.string_("Divider Factor (N): " ++ n);
+            
+            // Write the updated value to the control bus
+            ~dividerBus.set(n);
+        });
+
+    // Clean up resources automatically if you close the UI window
+    window.onClose = {
+        ~tickSynth.free;
+        ~dividerBus.free;
+        "GUI closed, synth nodes freed.".postln;
+    };
+};
+)
 
 ::
