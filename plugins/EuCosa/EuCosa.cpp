@@ -24,11 +24,11 @@ namespace EuCosa {
       float currentInput = inTicks[i];
       float outputSample = 0.0f;
       if (currentInput > 0.f && prevInput <= 0.f) {
-	counter++;
-	if (counter >= divider) {
-	  outputSample = 1.0f;
-	  counter = 0; 
-	}
+        counter++;
+        if (counter >= divider) {
+          outputSample = 1.0f;
+          counter = 0; 
+        }
       }
       outSignal[i] = outputSample;
       prevInput = currentInput;
