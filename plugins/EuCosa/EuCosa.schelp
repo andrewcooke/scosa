@@ -21,93 +21,22 @@ examples::
 
 code::
 
+s.reboot;
 (
-s.waitForBoot {
-    var window, freqSlider, slider1, slider2, slider3;
-    var freqLabel, label1, label2, label3;
-    
-    // 1. Allocate Control Buses for your three control parameters
-    ~bus1 = Bus.control(s, 1).set(16.0);
-    ~bus2 = Bus.control(s, 1).set(4.0);
-    ~bus3 = Bus.control(s, 1).set(0.25);
-
-    s.sync; // Sync with the server
-
-    // 2. Define the Live Synth Node
-    ~tickSynth = {
-        var freq = \freq.kr(10); // Master clock trigger frequency
-        var originalTicks = Impulse.ar(freq);
-        
-        // Read from your 3 control buses
-        var val1 = ~bus1.kr;
-        var val2 = ~bus2.kr;
-        var val3 = ~bus3.kr;
-        
-        // Pass everything into EuCosa
-        var outputs = EuCosa.ar(originalTicks, val1, val2, val3);
-        
-        // Output channel 0: Divided/Processed triggers
-        // Output channel 1: Remainder/Alternate triggers
-        outputs * 0.4;
-    }.play;
-
-    s.sync;
-    s.scope(numChannels: 2); // Open a 2-channel scope to view the dual outputs
-
-    // 3. Construct the GUI Window
-    window = Window("EuCosa Advanced Controller", Rect(200, 200, 400, 280));
-    window.front;
-    window.view.decorator = FlowLayout(window.view.bounds, 10@10, 10@10);
-
-    // --- MASTER FREQUENCY SLIDER ---
-    freqLabel = StaticText(window, Rect(0, 0, 380, 20)).string_("Tick Frequency: 10 Hz");
-    freqSlider = Slider(window, Rect(0, 0, 380, 25))
-        .value_(0.1)
-        .action_({ |sl|
-            var hz = sl.value.linexp(0.0, 1.0, 1.0, 500.0).round(0.1);
-            freqLabel.string_("Tick Frequency: " ++ hz ++ " Hz");
-            ~tickSynth.set(\freq, hz);
-        });
-
-    // --- SLIDER 1 (Initial: 16) ---
-    label1 = StaticText(window, Rect(0, 0, 380, 20)).string_("Param 1 (Integer): 16");
-    slider1 = Slider(window, Rect(0, 0, 380, 25))
-        .value_(16 / 32) // Normalized mid-point approximation
-        .action_({ |sl|
-            var val = sl.value.linlin(0.0, 1.0, 1.0, 32.0).round(1); // Maps 1 to 32 integers
-            label1.string_("Param 1 (Integer): " ++ val);
-            ~bus1.set(val);
-        });
-
-    // --- SLIDER 2 (Initial: 4) ---
-    label2 = StaticText(window, Rect(0, 0, 380, 20)).string_("Param 2 (Integer): 4");
-    slider2 = Slider(window, Rect(0, 0, 380, 25))
-        .value_(4 / 16) 
-        .action_({ |sl|
-            var val = sl.value.linlin(0.0, 1.0, 1.0, 16.0).round(1); // Maps 1 to 16 integers
-            label2.string_("Param 2 (Integer): " ++ val);
-            ~bus2.set(val);
-        });
-
-    // --- SLIDER 3 (Initial: 0.25) ---
-    label3 = StaticText(window, Rect(0, 0, 380, 20)).string_("Param 3 (Float): 0.25");
-    slider3 = Slider(window, Rect(0, 0, 380, 25))
-        .value_(0.25) 
-        .action_({ |sl|
-            var val = sl.value.linlin(0.0, 1.0, 0.0, 1.0).round(0.01); // Maps 0.0 to 1.0 floating point
-            label3.string_("Param 3 (Float): " ++ val);
-            ~bus3.set(val);
-        });
-
-    // Automatic clean up on close
-    window.onClose = {
-        ~tickSynth.free;
-        ~bus1.free;
-        ~bus2.free;
-        ~bus3.free;
-        "Synth and buses freed safely.".postln;
-    };
-};
+SynthDef(\euCosaBeepDemo, { |trigFreq = 64, beats = 5|
+    var triggerSeq, euCosaOutputs, firstOutput, env, snd;
+    triggerSeq = Impulse.ar(trigFreq);
+    euCosaOutputs = EuCosa.ar(triggerSeq, 16, beats, 0.25, 0.25);
+    firstOutput = euCosaOutputs[0];
+    env = EnvGen.ar(Env.perc(0.005, 0.15), firstOutput, doneAction: 0);
+    snd = SinOsc.ar(1000, 0, 0.25) * env;
+    Out.ar(0, snd ! 2);
+}).add;
 )
+~demoInstance = Synth(\euCosaBeepDemo);
+~demoInstance.set(\trigFreq, 32);
+~demoInstance.set('beats', 15);
+~demoInstance.free;
+s.quit;
 
 ::
