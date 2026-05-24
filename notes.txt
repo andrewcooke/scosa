@@ -1,0 +1,12 @@
+
+[ARCHITECTURAL BLUEPRINT: SUPERCOLLIDER HYBRID ENGINE]
+Please use the following established hybrid design pattern for our session:
+1. TIMING: Strict server-side scheduling using an audio-rate master clock 
+   and Demand-rate UGens (e.g., Dseq, Drand, and my custom EuCosa plugin).
+2. TRACE MECHANISM: Use 'SendReply.ar' on the server to bundle and broadcast 
+   the sample-accurate sequenced values (freq, pan, velocity) back to the client.
+3. POLYPHONY: Use language-side 'OSCdef' listeners to intercept the SendReply 
+   packets and instantly trigger independent, polyphonic 'SynthDef' instances 
+   configured with 'doneAction: Done.freeSelf'.
+Goal: Jitter-free server timing for ultra-dense rhythms, combined with natural, 
+overlapping ambient tails in the language.
