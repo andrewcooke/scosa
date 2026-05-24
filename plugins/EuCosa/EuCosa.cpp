@@ -20,10 +20,10 @@ namespace EuCosa {
     float* trigger0      = out(Out::trigger0);
     float* trigger1      = out(Out::trigger1);
     float* error         = out(Out::error);
+
     // TODO - use unsigned for faster modulus
     int length = std::min(maxLength, std::max(1, static_cast<int>(lengthFloat)));
     int beats = std::min(length, std::max(1, static_cast<int>(beatsFloat)));
-
     if (length != m_prev_length || beats != m_prev_beats) {
       recalculateError(length, beats);
       m_prev_length = length;
@@ -38,7 +38,8 @@ namespace EuCosa {
       float currentInput = trigger[i];
       float output0 = 0.0f;
       float output1 = 0.0f;
-      float errorBoth = m_error[counter];
+      // handle magic -1 value before first trigger
+      float errorBoth = counter >= 0 ? m_error[counter] : 0.0f;
       if (currentInput > 0.f && prevInput <= 0.f) {
         ++counter;
         while (counter >= length) counter -= length;
@@ -73,6 +74,11 @@ namespace EuCosa {
       m_trigger[nextInt] = true;
       prevInt = nextInt;
     }
+    // pad remaining blanks
+    while (prevInt < length - 1) {
+      m_error[++prevInt] = 0.0f;
+      m_trigger[prevInt] = false;
+    }      
   }
   
 }
