@@ -26,6 +26,7 @@ namespace EuCosa {
     enum Out {
       trigger0,
       trigger1,
+      measure,
       error,
       nOut
     };

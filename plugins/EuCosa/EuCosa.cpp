@@ -19,6 +19,7 @@ namespace EuCosa {
     float thresh1        = in0(In::thresh1);
     float* trigger0      = out(Out::trigger0);
     float* trigger1      = out(Out::trigger1);
+    float* measure       = out(Out::measure);
     float* error         = out(Out::error);
 
     // TODO - use unsigned for faster modulus
@@ -39,18 +40,21 @@ namespace EuCosa {
       float output0 = 0.0f;
       float output1 = 0.0f;
       // handle magic -1 value before first trigger
-      float errorBoth = counter >= 0 ? m_error[counter] : 0.0f;
+      float outputError = counter >= 0 ? m_error[counter] : 0.0f;
+      float outputMeasure = 0.0f;
       if (currentInput > 0.f && prevInput <= 0.f) {
         ++counter;
         while (counter >= length) counter -= length;
         if (m_trigger[counter]) {
-          if (std::abs(errorBoth) < thresh0) output0 = 1;
-          if (std::abs(errorBoth) >= thresh1) output1 = 1;
+          if (std::abs(outputError) < thresh0) output0 = 1;
+          if (std::abs(outputError) >= thresh1) output1 = 1;
         }
+        if (counter == 0) outputMeasure = 1.0f;
       }
       trigger0[i] = output0;
       trigger1[i] = output1;
-      error[i] = errorBoth;
+      error[i] = outputError;
+      measure[i] = outputMeasure;
       prevInput = currentInput;
     }
     
