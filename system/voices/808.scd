@@ -90,6 +90,6 @@ SynthDef(\tr808_tom, { |out = 0, freq = 90, amp = 0.5, pan = 0, velocity = 1, de
     Out.ar(out, Balance2.ar(sig, sig, pan, env * amp));
 }).add;
 
-"tr-808 loaded".postln;
+"808 loaded".postln;
 
 )

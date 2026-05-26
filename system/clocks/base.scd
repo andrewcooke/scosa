@@ -14,9 +14,9 @@ SynthDef(\master_engine_clock, { |outBus, tempoHz = 8|
 }).add;
 
 // initalisation wrapper
-~baseClock = { |tempoBpm = 120, stepsPerBeat = 4|
+~baseClock = { |tempoBpm = 120, subSteps = 1|
     var hzValue;
-    hzValue = (tempoBpm / 60) * stepsPerBeat;
+    hzValue = (tempoBpm / 60) * subSteps;
     
     "starting base clock".postln;
     
