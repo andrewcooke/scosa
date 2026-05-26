@@ -19,7 +19,8 @@ s.waitForBoot({
     s.sync;  // wait for server to catch up
 
 	~measure = 16;
-
+	~subSteps = 4;
+	
 	~eucosa0Source = Synth(\eucosaSource, [
 		\clockBus, ~clockBus,
 		\length, ~measure,
@@ -58,7 +59,7 @@ s.waitForBoot({
 	}, '/eucosa', s);
 
 	s.sync;
-	~baseClock.value(tempoBpm: 120);
+	~baseClock.value(tempoBpm: 120, subSteps: 4);
 
 	"1312-symphony main loaded".postln;
 
