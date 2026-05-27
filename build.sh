@@ -11,6 +11,7 @@ set -x
 
 #cmake --build . --target clean
 
-cmake .. -DCMAKE_INSTALL_PREFIX=/home/andrew/.local/share/SuperCollider/Extensions/ -DSTRICT=ON
+#cmake .. -DSC_PATH=/home/andrew/pkg/supercollider -DCMAKE_INSTALL_PREFIX=/home/andrew/.local/share/SuperCollider/Extensions/ -DSTRICT=ON
+cmake .. -DSC_PATH=/home/andrew/pkg/supercollider -DCMAKE_INSTALL_PREFIX=/home/andrew/.local/share/SuperCollider/Extensions/
 cmake --build . --config Release --verbose
 cmake --install .
