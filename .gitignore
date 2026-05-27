@@ -1,7 +1,9 @@
 .vimrc
 
-build*
+build
 
 .DS_Store
 
 *~
+
+nohup.out
