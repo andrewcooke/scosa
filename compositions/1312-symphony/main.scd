@@ -11,8 +11,8 @@ s.waitForBoot({
 	"loading 1312-symphony main".postln;
 
 	// clean up synths if re-running
-	~eucosa0Source.free;
-	~eucosa1Source.free;
+	~eucosa4Source.free;
+	~eucosa12Source.free;
 
     (systemDir +/+ "voices/808.scd").load;
     (systemDir +/+ "clocks/base.scd").load;
@@ -22,50 +22,57 @@ s.waitForBoot({
 
 	~measure = 16;
 	~subSteps = 4;
+    ~triplets = 3;
 
 	// ~scopeBus = Bus.control(s, 1);
 
-	~eucosa0Source = Synth(\eucosaSource, [
-		\clockBus, ~clockBus,
+	~fourBus = Bus.audio(s, 1);
+	~dividerSynth.free;
+	~dividerSynth = {
+		Out.ar(~fourBus, PulseDivider.ar(In.ar(~clockBus, 1), ~triplets))
+	}.play(target: s, addAction: \addToHead);
+
+	~eucosa4Source = Synth(\eucosaSource, [
+		\clockBus, ~fourBus,
 		// \scopeBus, ~scopeBus,
 		\length, ~measure,
 		\beats, 7,
-		\thresh0, 0.25,
-		\thresh1, 0.15
+		\thresh0, 0.0001,
+		\thresh1, 0.01
 	], target: s, addAction: \addToTail);
 
-	~eucosa1Source = Synth(\eucosaSource, [
+	~eucosa12Source = Synth(\eucosaSource, [
 		\clockBus, ~clockBus,
-		\length, ~measure,
-		\beats, 15,
+		\length, ~measure * ~triplets,
+		\beats, 35,
 		\thresh0, 0.1,
 		\thresh1, 0.05,
 	], target: s, addAction: \addToTail);
 
-	~node0 = ~eucosa0Source.nodeID;
-	~node1 = ~eucosa1Source.nodeID;
+	~node4 = ~eucosa4Source.nodeID;
+	~node12 = ~eucosa12Source.nodeID;
 
 	~eucosaRouter.free;
 	~eucosaRouter = OSCdef(\eucosaRouter, { |msg|
 		var path, nodeId, replyId, err;
 		msg.postln;
 		#path, nodeId, replyId, err = msg;
-		// err = msg[3];
 		[\incoming, nodeId, replyId, err].postln;
 		s.makeBundle(nil, {
 			case
-			{ (nodeId == ~node0) && (replyId == 0) } { Synth(\tr808_kick,       [\amp, 1.0, \pan, -0.3]) }
-			{ (nodeId == ~node0) && (replyId == 1) } { Synth(\tr808_snare,      [\amp, 1.0, \pan, 0.3]) }
-			{ (nodeId == ~node0) && (replyId == 2) } { }
-			{ (nodeId == ~node1) && (replyId == 0) } { Synth(\tr808_closed_hat, [\amp, 1.0, \pan, -0.3]) }
-			{ (nodeId == ~node1) && (replyId == 1) } { Synth(\tr808_open_hat,   [\amp, 1.0, \pan, 0.3]) }
-			{ (nodeId == ~node1) && (replyId == 2) } { }
+			{ (nodeId == ~node4)  && (replyId == 0) } { Synth(\tr808_kick,       [\amp, 1.0, \pan, -0.3]) }
+			{ (nodeId == ~node4)  && (replyId == 1) } { Synth(\tr808_snare,      [\amp, 1.0, \pan, 0.3]) }
+			{ (nodeId == ~node4)  && (replyId == 2) } { }
+			{ (nodeId == ~node12) && (replyId == 0) } { Synth(\tr808_closed_hat, [\amp, 1.0, \pan, -0.3]) }
+			{ (nodeId == ~node12) && (replyId == 1) } { Synth(\tr808_open_hat,   [\amp, 1.0, \pan, 0.3]) }
+			{ (nodeId == ~node12) && (replyId == 2) } { }
 			{ true } { };
 		});
 	}, '/eucosa');
 
 	s.sync;
-	~baseClock.value(tempoBpm: 120, subSteps: ~subSteps);
+
+	~baseClock.value(tempoBpm: 120, subSteps: ~subSteps * ~triplets);  // sets ~clockBus
 
 	"1312-symphony main loaded".postln;
 
