@@ -1,2 +1,2 @@
-python3 /home/andrew/supercollider/tools/cmake_gen/generate_server_plugin_cmake.py -P "SCosa" -p "plugins/EuCosa" -a "andrew cooke" $@
+python3 /home/andrew/pkg/supercollider/tools/cmake_gen/generate_server_plugin_cmake.py -P "SCosa" -p "plugins/EuCosa" "plugins/TrigGate" "plugins/Justo" -a "andrew cooke" $@
 

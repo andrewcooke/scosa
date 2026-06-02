@@ -2,7 +2,6 @@
 // simple clockBus with bpm etc from google gemini
 
 (
-
 "loading base clock library".postln;
 
 ~clockBus = Bus.audio(s, 1);
@@ -28,5 +27,4 @@ SynthDef(\master_engine_clock, { |outBus, tempoHz = 8|
 };
 
 "base loaded".postln;
-
 )

@@ -37,6 +37,7 @@ s.waitForBoot({
 		// \scopeBus, ~scopeBus,
 		\length, ~measure,
 		\beats, 7,
+		\reference, 4,
 		\thresh0, 0.0001,
 		\thresh1, 0.01
 	], target: s, addAction: \addToTail);
@@ -45,6 +46,7 @@ s.waitForBoot({
 		\clockBus, ~clockBus,
 		\length, ~measure * ~triplets,
 		\beats, 35,
+		\reference, 4,
 		\thresh0, 0.1,
 		\thresh1, 0.05,
 	], target: s, addAction: \addToTail);

@@ -2,7 +2,6 @@
 // 808 emulation from google gemini
 
 (
-
 "loading 808 voice library".postln;
 
 SynthDef(\tr808_kick, { |out = 0, freq = 55, amp = 0.5, pan = 0, velocity = 1|
@@ -91,5 +90,4 @@ SynthDef(\tr808_tom, { |out = 0, freq = 90, amp = 0.5, pan = 0, velocity = 1, de
 }).add;
 
 "808 loaded".postln;
-
 )
