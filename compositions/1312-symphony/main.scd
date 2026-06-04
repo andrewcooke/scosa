@@ -38,8 +38,8 @@ s.waitForBoot({
 		\length, ~measure,
 		\beats, 7,
 		\reference, 4,
-		\thresh0, 0.0001,
-		\thresh1, 0.01
+		\thresh0, 0.2,
+		\thresh1, 0.2
 	], target: s, addAction: \addToTail);
 
 	~eucosa12Source = Synth(\eucosaSource, [
@@ -48,7 +48,7 @@ s.waitForBoot({
 		\beats, 35,
 		\reference, 4,
 		\thresh0, 0.1,
-		\thresh1, 0.05,
+		\thresh1, 0.01,
 	], target: s, addAction: \addToTail);
 
 	~node4 = ~eucosa4Source.nodeID;
@@ -57,12 +57,11 @@ s.waitForBoot({
 	~eucosaRouter.free;
 	~eucosaRouter = OSCdef(\eucosaRouter, { |msg|
 		var path, nodeId, replyId, err;
-		msg.postln;
 		#path, nodeId, replyId, err = msg;
-		[\incoming, nodeId, replyId, err].postln;
+		[path, nodeId, replyId, err].postln;
 		s.makeBundle(nil, {
 			case
-			{ (nodeId == ~node4)  && (replyId == 0) } { Synth(\tr808_kick,       [\amp, 1.0, \pan, -0.3]) }
+			{ (nodeId == ~node4)  && (replyId == 0) } { Synth(\tr808_kick,       [\amp, 0.25, \pan, -0.3]) }
 			{ (nodeId == ~node4)  && (replyId == 1) } { Synth(\tr808_snare,      [\amp, 1.0, \pan, 0.3]) }
 			{ (nodeId == ~node4)  && (replyId == 2) } { }
 			{ (nodeId == ~node12) && (replyId == 0) } { Synth(\tr808_closed_hat, [\amp, 1.0, \pan, -0.3]) }

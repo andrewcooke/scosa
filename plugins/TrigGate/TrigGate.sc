@@ -23,5 +23,4 @@ TrigGate : MultiOutUGen {
         ^this.checkValidInputs
     }
 
-    name { ^"TrigGate" }
 }

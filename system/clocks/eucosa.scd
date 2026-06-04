@@ -5,9 +5,9 @@
 (
 "loading eucosa".postln;
 
-SynthDef(\eucosaSource, { |clockBus, scopeBus=(-1), length=16, beats=4, thresh0=0.25, thresh1=0.25|
+SynthDef(\eucosaSource, { |clockBus, scopeBus=(-1), length=16, reference=4, beats=4, thresh0=0.25, thresh1=0.25|
     var trigger0, trigger1, measure, weight, isScope;
-    #trigger0, trigger1, measure, weight = EuCosa.ar(In.ar(clockBus, 1), length, beats, thresh0, thresh1);
+    #trigger0, trigger1, measure, weight = EuCosa.ar(In.ar(clockBus, 1), length, reference, beats, thresh0, thresh1);
     SendReply.ar(HPZ1.ar(trigger0) > 0, '/eucosa', weight, replyID: 0);
     SendReply.ar(HPZ1.ar(trigger1) > 0, '/eucosa', weight, replyID: 1);
     SendReply.ar(HPZ1.ar(measure) > 0,  '/eucosa', weight, replyID: 2);
