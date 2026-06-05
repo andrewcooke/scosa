@@ -38,16 +38,17 @@ namespace SCosa {
     float prevInput = m_prev_input;
     int counter = m_counter;
     
+    // handle magic -1 counter value before first trigger
+    float outputWeight = counter >= 0 ? m_weight[counter] : 0.0f;
     for (int i = 0; i < nSamples; ++i) {
       float currentInput = trigger[i];
       float output0 = 0.0f;
       float output1 = 0.0f;
-      // handle magic -1 counter value before first trigger
-      float outputWeight = counter >= 0 ? m_weight[counter] : 0.0f;
       float outputMeasure = 0.0f;
       if (currentInput > 0.f && prevInput <= 0.f) {
         ++counter;
         while (counter >= length) counter -= length;
+	outputWeight = m_weight[counter];
         if (m_trigger[counter]) {
           if (std::abs(outputWeight) < thresh0) output0 = 1.0f;
           if (std::abs(outputWeight) >= thresh1) output1 = 1.0f;
@@ -66,28 +67,34 @@ namespace SCosa {
   }
 
   /* using the aliasing approach here.
-     m_weight is zero if there is no beat or if the beat is exactly on the pulse.
+     imagine a graph where x axis extends tyo length and y axis to beats.
+     a diagonal line extends from (0,0) to (length,beats).
+     we generate a trigger quantised on the x axis each time the line intersects with an integer on the y axis.
+     overlaid on this is a second x axis scaled so reference matches length.
+     the error is the distance between the (unquantised) intersection and the nearest integer reference (in reference units).
    */
   void EuCosa::recalculateWeight(int length, int ref, int beats) {
-    int prevInt = 0;
-    float invRef = 1.0 / ref;
-    for (int i = 0; i < beats; i++) {
-      float nextFloat = (i * length) / static_cast<float>(beats);
-      float nextInt  = std::round(nextFloat);
-      while (prevInt < nextInt) {
-        m_weight[++prevInt] = 0.0f;
-        m_trigger[prevInt] = false;
+    int prevLengthInt = 0;
+    float beats2length = length / static_cast<float>(beats);
+    float length2ref = ref / static_cast<float>(length);
+    for (int beat = 0; beat < beats; beat++) {
+      float lengthFloat = beat * beats2length;
+      int lengthInt = std::lrintf(lengthFloat);
+      while (prevLengthInt < lengthInt - 1) {
+        m_weight[++prevLengthInt] = 0.0f;
+        m_trigger[prevLengthInt] = false;
       }
-      float weight = i * invRef;
-      float error = std::abs(weight - std::lrintf(weight));  // lrintf is ~ fast roundf
-      m_weight[nextInt] = 1 - 2 * error;
-      m_trigger[nextInt] = true;
-      prevInt = nextInt;
+      float refFloat = lengthFloat * length2ref;
+      int refInt = std::lrintf(refFloat);
+      float error = std::abs(refFloat - refInt);  // [0,1/2]
+      m_weight[lengthInt] = 1 - 2 * error;  // [1,0]
+      m_trigger[lengthInt] = true;
+      prevLengthInt = lengthInt;
     }
     // pad remaining blanks
-    while (prevInt < length - 1) {
-      m_weight[++prevInt] = 0.0f;
-      m_trigger[prevInt] = false;
+    while (prevLengthInt < length - 1) {
+      m_weight[++prevLengthInt] = 0.0f;
+      m_trigger[prevLengthInt] = false;
     }      
   }
   

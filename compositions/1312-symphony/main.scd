@@ -36,9 +36,9 @@ s.waitForBoot({
 		\clockBus, ~fourBus,
 		// \scopeBus, ~scopeBus,
 		\length, ~measure,
-		\beats, 7,
+		\beats, 9,
 		\reference, 4,
-		\thresh0, 0.2,
+		\thresh0, 0.5,
 		\thresh1, 0.2
 	], target: s, addAction: \addToTail);
 
@@ -47,8 +47,8 @@ s.waitForBoot({
 		\length, ~measure * ~triplets,
 		\beats, 35,
 		\reference, 4,
-		\thresh0, 0.1,
-		\thresh1, 0.01,
+		\thresh0, 0.3,
+		\thresh1, 0.5,
 	], target: s, addAction: \addToTail);
 
 	~node4 = ~eucosa4Source.nodeID;
@@ -56,16 +56,16 @@ s.waitForBoot({
 
 	~eucosaRouter.free;
 	~eucosaRouter = OSCdef(\eucosaRouter, { |msg|
-		var path, nodeId, replyId, err;
-		#path, nodeId, replyId, err = msg;
-		[path, nodeId, replyId, err].postln;
+		var path, nodeId, replyId, weight;
+		#path, nodeId, replyId, weight = msg;
+		[path, nodeId, replyId, weight].postln;
 		s.makeBundle(nil, {
 			case
-			{ (nodeId == ~node4)  && (replyId == 0) } { Synth(\tr808_kick,       [\amp, 0.25, \pan, -0.3]) }
-			{ (nodeId == ~node4)  && (replyId == 1) } { Synth(\tr808_snare,      [\amp, 1.0, \pan, 0.3]) }
+			{ (nodeId == ~node4)  && (replyId == 0) } { Synth(\tr808_kick,       [\amp, 0.5 * weight, \pan, -0.3]) }
+			{ (nodeId == ~node4)  && (replyId == 1) } { Synth(\tr808_snare,      [\amp, 0.2 * weight, \pan, 0.3]) }
 			{ (nodeId == ~node4)  && (replyId == 2) } { }
-			{ (nodeId == ~node12) && (replyId == 0) } { Synth(\tr808_closed_hat, [\amp, 1.0, \pan, -0.3]) }
-			{ (nodeId == ~node12) && (replyId == 1) } { Synth(\tr808_open_hat,   [\amp, 1.0, \pan, 0.3]) }
+			{ (nodeId == ~node12) && (replyId == 0) } { Synth(\tr808_closed_hat, [\amp, weight, \pan, -0.3]) }
+			{ (nodeId == ~node12) && (replyId == 1) } { Synth(\tr808_open_hat,   [\amp, 0.1 * weight, \pan, 0.3]) }
 			{ (nodeId == ~node12) && (replyId == 2) } { }
 			{ true } { };
 		});
@@ -73,7 +73,7 @@ s.waitForBoot({
 
 	s.sync;
 
-	~baseClock.value(tempoBpm: 120, subSteps: ~subSteps * ~triplets);  // sets ~clockBus
+	~baseClock.value(tempoBpm: 140, subSteps: ~subSteps * ~triplets);  // sets ~clockBus
 
 	"1312-symphony main loaded".postln;
 
