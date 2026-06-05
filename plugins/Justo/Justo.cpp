@@ -51,9 +51,10 @@ namespace SCosa {
       }
     }
   }
-
+  
   const Justo::Transition* Justo::randomTransition() {
-    return &m_transitions[m_dist(m_gen)];
+    int index = m_dist(m_gen);
+    return &m_transitions[index];
   }
   
 }

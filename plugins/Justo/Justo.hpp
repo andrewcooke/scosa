@@ -5,6 +5,7 @@
 #include <array>
 #include <random>
 #include <iterator>
+#include <cstdint>
 
 static InterfaceTable *ft;
 
@@ -47,9 +48,9 @@ namespace SCosa {
       nOut
     };
     float m_prev_input{0.0f};
-    float m_root{420.0f};
-    int m_numerator{1};
-    int m_denominator{1};
+    float m_root{440.0f};
+    int64_t m_numerator{1};
+    int64_t m_denominator{1};
     std::random_device m_rd;
     std::mt19937 m_gen{m_rd()};
     std::discrete_distribution<int> m_dist;

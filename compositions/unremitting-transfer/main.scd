@@ -12,11 +12,11 @@ s.waitForBoot({
 
 	~pianoBus = Bus.audio(s, 2);
 
-	SynthDef(\pianoSoundBoard, { |inBus = 0, out = 0|
+	SynthDef(\pianoSoundBoard, { |inBus = 0, outBus = 0|
 		var input, resonance;
 		input = In.ar(inBus, 1);
 		resonance = OteySoundBoard.ar(input);
-		Out.ar(out, resonance);
+		Out.ar(outBus, resonance);
 	}).add;
 
 	s.sync;
@@ -24,11 +24,10 @@ s.waitForBoot({
 	~soundBoardNode = Synth.tail(s, \pianoSoundBoard, [\inBus, ~pianoBus, \out, 0]);
 
 	SynthDef(\pianoString, { |outBus = 0, freq = 440, vel = 0.5, t_gate = 1|
-		var stringSig, env;
+		var string, env;
 		env = EnvGen.ar(Env.perc(0.0001, 4.0), doneAction: Done.freeSelf);
-		stringSig = OteyPianoStrings.ar(freq, vel, t_gate: t_gate);
-		// Out.ar(outBus, Pan2.ar(stringSig * env * 0.15, LinLin.kr(freq, 36.midicps, 90.midicps, -0.6, 0.6)));
-		Out.ar(outBus, stringSig * env);
+		string = OteyPianoStrings.ar(freq, vel, t_gate: t_gate);
+		Out.ar(outBus, string * env);
 	}).add;
 
 	SynthDef(\engine, {
