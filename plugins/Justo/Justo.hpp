@@ -2,7 +2,7 @@
 #pragma once
 
 #include "SC_PlugIn.hpp"
-#include <array>
+#include <vector>
 #include <random>
 #include <iterator>
 #include <cstdint>
@@ -12,43 +12,51 @@ static InterfaceTable *ft;
 namespace SCosa {
 
   class Justo : public SCUnit {
+    
   public:
     Justo();
-  protected:
-    struct Transition {
-      int weight;
-      int numerator;
-      int denominator;
-    };
-    void update();
-    void reduce();
-    const Transition* randomTransition();
+    
   private:
-    inline static const Transition m_transitions[] = {
-      {3, 1, 1},
-      {1, 3, 2},
-      {1, 2, 3},
-      {1, 4, 3},
-      {1, 3, 4},
-      {1, 5, 4},
-      {1, 4, 5},
-      {1, 6, 5},
-      {1, 5, 6},
-      {1, 7, 6},
-      {1, 6, 7}
-    };
-    inline static const int m_primes[] = {2, 3, 5, 7};
-    void next(int nSamples);
     enum In {
       trigger,
+      maxSize,
+      root,
       nIn
     };
     enum Out {
       frequency,
       nOut
     };
+    struct Transition {
+      int numerator;
+      int denominator;
+    };
+    struct WeightedTransition : Transition {
+      int weight;
+    };
+    inline static const WeightedTransition m_weighted_transitions[] = {
+      {1, 1, 32},
+      {3, 2, 16},
+      {2, 3, 16},
+      {4, 3, 8},
+      {3, 4, 8},
+      {5, 4, 4},
+      {4, 5, 4},
+      {6, 5, 2},
+      {5, 6, 2},
+      {7, 6, 1},
+      {6, 7, 1}
+    };
+    inline static const int m_primes[] = {2, 3, 5, 7};
+    void reset();
+    void update();
+    void reduce();
+    const Transition* randomTransition();
+    void next(int nSamples);
+    std::vector<const Transition*> m_melody;
+    int m_melody_index{-1};
+    float m_root{0.0f};
     float m_prev_input{0.0f};
-    float m_root{440.0f};
     int64_t m_numerator{1};
     int64_t m_denominator{1};
     std::random_device m_rd;

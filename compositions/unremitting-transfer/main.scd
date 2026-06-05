@@ -31,10 +31,10 @@ s.waitForBoot({
 	}).add;
 
 	SynthDef(\engine, {
-		var bpm = 120;
+		var bpm = 320;
 		var cps = bpm / 60;
 		var trig = Impulse.ar(cps);
-		var freq = Justo.ar(trig);
+		var freq = Justo.ar(trig, maxSize: 12, root: 440);
 		SendReply.ar(trig, '/justo/note', [trig, freq]);
 	}).add;
 
