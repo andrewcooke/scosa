@@ -20,6 +20,7 @@ namespace SCosa {
     enum In {
       trigger,
       maxSize,
+      mutate,
       root,
       nIn
     };
@@ -35,11 +36,11 @@ namespace SCosa {
       int weight;
     };
     inline static const WeightedTransition m_weighted_transitions[] = {
-      {1, 1, 32},
-      {3, 2, 16},
-      {2, 3, 16},
-      {4, 3, 8},
-      {3, 4, 8},
+      {1, 1, 8},
+      {3, 2, 2},
+      {2, 3, 2},
+      {4, 3, 4},
+      {3, 4, 4},
       {5, 4, 4},
       {4, 5, 4},
       {6, 5, 2},
@@ -51,10 +52,12 @@ namespace SCosa {
     void reset();
     void update();
     void reduce();
+    void change_melody();
     const Transition* randomTransition();
     void next(int nSamples);
     std::vector<const Transition*> m_melody;
     int m_melody_index{-1};
+    bool m_audio_rate_mutate{false};
     float m_root{0.0f};
     float m_prev_input{0.0f};
     int64_t m_numerator{1};

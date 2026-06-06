@@ -21,6 +21,7 @@ namespace SCosa {
   void Justo::next(int nSamples) {
     
     const float* trigger = in(In::trigger);
+    const float* mutate = in(In::mutate);
     float* frequency = out(Out::frequency);
 
     float prevInput = m_prev_input;
@@ -30,6 +31,7 @@ namespace SCosa {
       float currentInput = trigger[i];
       if (currentInput > 0.0f && prevInput <= 0.0f) {
 	if (++m_melody_index == m_melody.size()) reset();
+	if (mutate[i] > 0.0f) change_melody();
 	update();
 	reduce();
         currentFreq = m_root * m_numerator / m_denominator;
@@ -39,6 +41,10 @@ namespace SCosa {
     }
     
     m_prev_input = prevInput;
+  }
+
+  void Justo::change_melody() {
+    m_melody[m_melody_index] = randomTransition();
   }
 
   void Justo::reset() {
