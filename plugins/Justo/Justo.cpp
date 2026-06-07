@@ -49,8 +49,9 @@ namespace SCosa {
 	currentDistance = currentNumerator + currentDenominator;
       }
       frequency[i] = currentFreq;
-      numeratorOut[i] = currentNumerator,
-      denominatorOut[i] = currentDenominator,
+      numeratorOut[i] = currentNumerator;
+      denominatorOut[i] = currentDenominator;
+      distanceOut[i] = currentDistance;
       prevTrigger = currentTrigger;
     }
 

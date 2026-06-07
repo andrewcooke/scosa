@@ -32,14 +32,16 @@ s.waitForBoot({
 		var freq, num, denom;
 		var bpm = 320;
 		var cps = bpm / 60;
+		var ratio = 4;
 		var quick = Impulse.ar(cps);
-		var slow = PulseDivider.ar(quick, div: 4);
+		var measure = 32;
+		var slow = PulseDivider.ar(quick, div: ratio);
 		var mutateSlowly = CoinGate.ar(0.002, quick);
 		var mutateQuickly = DC.ar(1);
-		var leftHand = Justo.ar(slow, maxSize: 32,  root: 110, mutate: mutateSlowly, numerator: DC.ar(1), denominator: DC.ar(1));
-		var rightHand = Justo.ar(quick, maxSize: 32,  root: 440, mutate: mutateQuickly, numerator: leftHand.numerator, denominator: leftHand.denominator);
-		SendReply.ar(slow, '/justo/note', [leftHand.frequency, 0.03, 2.0 / leftHand.distance]);
-		SendReply.ar(quick, '/justo/note', [rightHand.frequency, 1.0, 2.0 / rightHand.distance]);
+		var leftHand = Justo.ar(slow, maxSize: measure / ratio, root: 110, mutate: mutateSlowly, numerator: DC.ar(1), denominator: DC.ar(1));
+		var rightHand = Justo.ar(quick, maxSize: measure, root: 440, mutate: mutateQuickly, numerator: leftHand.numerator, denominator: leftHand.denominator);
+		SendReply.ar(slow,  '/justo/note', [leftHand.frequency,  0.1, 0.2 + (0.3 * 2.0 / leftHand.distance)]);
+		SendReply.ar(quick, '/justo/note', [rightHand.frequency, 1.0, 0.1 + (0.9 * 2.0 / rightHand.distance)]);
 	}).add;
 
 	OSCdef(\relay, { |msg|
