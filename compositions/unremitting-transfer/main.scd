@@ -33,9 +33,9 @@ s.waitForBoot({
 		var bpm = 480;
 		var cps = bpm / 60;
 		var trig = Impulse.ar(cps);
-		//var mutate = DC.ar(0.0);
-		var mutate = CoinGate.ar(0.2, trig);
-		var justo = Justo.ar(trig, maxSize: 12,  root: 440, mutate: mutate);
+//		var mutate = CoinGate.ar(0.2, trig);
+		var mutate = DC.ar(1);
+		var justo = Justo.ar(trig, maxSize: 12,  root: 440, mutate: mutate, numerator: DC.ar(1), denominator: DC.ar(1));
 		SendReply.ar(trig, '/justo/note', [trig, justo.frequency]);
 	}).add;
 

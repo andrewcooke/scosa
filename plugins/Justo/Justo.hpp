@@ -17,18 +17,24 @@ namespace SCosa {
     Justo();
     
   private:
-    enum In {
-      trigger,
-      maxSize,  // read only at startup
-      root,     // read only at startup
-      mutate,
-      nIn
+    struct In {
+      enum Type {
+	trigger,
+	maxSize,  // read only at startup
+	root,     // read only at startup
+	mutate,
+	numerator,
+	denominator,
+	nIn
+      };
     };
-    enum Out {
-      frequency,
-      numerator,
-      denominator,
-      nOut
+    struct Out {
+      enum Type {
+	frequency,
+	numerator,
+	denominator,
+	nOut
+      };
     };
     struct Transition {
       int numerator;
@@ -51,7 +57,7 @@ namespace SCosa {
       {6, 7, 1}
     };
     inline static const int m_primes[] = {2, 3, 5, 7};
-    void changeMelody(const int melodyIndex);
+    void changeMelody(const int melodyIndex, int64_t currentNumerator, int64_t currentDenominator, int64_t targetNumerator, int64_t targetDenominator);
     void readNextTransition(const int melodyIndex, int64_t& numerator, int64_t& denominator);
     static void backToStart(int& melodyIndex, int64_t& numerator, int64_t& denominator);
     void reduceFraction(int64_t& numerator, int64_t& denominator);

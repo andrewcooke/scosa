@@ -19,7 +19,7 @@ EuCosa : MultiOutUGen {
             if (rate != 'control' and: { rate != 'scalar' }) {
                 ^"EuCosa input " ++ i ++ " must be control rate (kr) or scalar.";
             };
-        }
+        };
         ^this.checkValidInputs
     }
 
