@@ -51,10 +51,10 @@ namespace SCosa {
       {6, 7, 1}
     };
     inline static const int m_primes[] = {2, 3, 5, 7};
-    void change_melody(const int melodyIndex);
-    void update(const int melodyIndex, int64_t& numerator, int64_t& denominator);
-    static void reset(int& melodyIndex, int64_t& numerator, int64_t& denominator);
-    void reduce(int64_t& numerator, int64_t& denominator);
+    void changeMelody(const int melodyIndex);
+    void readNextTransition(const int melodyIndex, int64_t& numerator, int64_t& denominator);
+    static void backToStart(int& melodyIndex, int64_t& numerator, int64_t& denominator);
+    void reduceFraction(int64_t& numerator, int64_t& denominator);
     const Transition& randomTransition();
     void next(int nSamples);
     std::vector<const Transition*> m_melody;

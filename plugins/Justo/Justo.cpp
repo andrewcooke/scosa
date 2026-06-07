@@ -26,7 +26,7 @@ namespace SCosa {
     float* numerator = out(Out::numerator);
     float* denominator = out(Out::denominator);
 
-    const float currentRoot = m_root;
+    const float root = m_root;
     int currentMelodyIndex = m_melody_index;
     float prevTrigger = m_prev_trigger;
     int64_t currentNumerator = m_numerator;
@@ -36,15 +36,15 @@ namespace SCosa {
     for (int i = 0; i < nSamples; ++i) {
       float currentTrigger = trigger[i];
       if (currentTrigger > 0.0f && prevTrigger <= 0.0f) {
-	if (++currentMelodyIndex == m_melody.size()) reset(currentMelodyIndex, currentNumerator, currentDenominator);
-	if (mutate[i] > 0.0f) change_melody(currentMelodyIndex);
-	update(currentMelodyIndex, currentNumerator, currentDenominator);
-	reduce(currentNumerator, currentDenominator);
-        currentFreq = currentRoot * currentNumerator / currentDenominator;
+	if (++currentMelodyIndex >= m_melody.size()) backToStart(currentMelodyIndex, currentNumerator, currentDenominator);
+	if (mutate[i] > 0.0f) changeMelody(currentMelodyIndex);
+	readNextTransition(currentMelodyIndex, currentNumerator, currentDenominator);
+	reduceFraction(currentNumerator, currentDenominator);
+        currentFreq = root * currentNumerator / currentDenominator;
       }
       frequency[i] = currentFreq;
-      numerator[i] = m_numerator,
-      denominator[i] = m_denominator,
+      numerator[i] = currentNumerator,
+      denominator[i] = currentDenominator,
       prevTrigger = currentTrigger;
     }
 
@@ -54,24 +54,24 @@ namespace SCosa {
     m_denominator = currentDenominator;
   }
 
-  void Justo::change_melody(const int melodyIndex) {
+  void Justo::changeMelody(const int melodyIndex) {
     m_melody[melodyIndex] = &randomTransition();
   }
 
-  void Justo::update(const int melodyIndex, int64_t& numerator, int64_t& denominator) {
-    if (melodyIndex < m_melody.size()) {  // still needed?
+  void Justo::readNextTransition(const int melodyIndex, int64_t& numerator, int64_t& denominator) {
+    if (melodyIndex < m_melody.size()) {  // why is this needed?!
       numerator *= m_melody[melodyIndex]->numerator;
       denominator *= m_melody[melodyIndex]->denominator;
     }
   }
 
-  void Justo::reset(int& melodyIndex, int64_t& numerator, int64_t& denominator) {
+  void Justo::backToStart(int& melodyIndex, int64_t& numerator, int64_t& denominator) {
     melodyIndex = 0;
     numerator = 1;
     denominator = 1;
   }
 
-  void Justo::reduce(int64_t& numerator, int64_t& denominator) {
+  void Justo::reduceFraction(int64_t& numerator, int64_t& denominator) {
     for (int i = 0; i < std::size(m_primes); i++) {
       int p = m_primes[i];
       while (numerator % p == 0 && denominator % p == 0) {
