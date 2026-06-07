@@ -3,12 +3,12 @@ Justo : MultiOutUGen {
     
     *ar { |trigger, maxSize = 32, root = 440, mutate, numerator, denominator|
         var out = this.multiNew('audio', trigger, maxSize, root, mutate, numerator, denominator);
-		^(frequency: out[0], numerator: out[1], denominator: out[2])
+		^(frequency: out[0], numerator: out[1], denominator: out[2], distance: out[3])
     }
 
     init { |... theInputs|
         inputs = theInputs;
-        ^this.initOutputs(3, rate);
+        ^this.initOutputs(4, rate);
     }
     
     checkInputs {

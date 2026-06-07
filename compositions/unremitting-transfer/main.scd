@@ -15,40 +15,44 @@ s.waitForBoot({
 	SynthDef(\pianoSoundBoard, { |inBus = 0, outBus = 0|
 		var input, resonance;
 		input = In.ar(inBus, 2);
-		resonance = OteySoundBoard.ar(input, c1: 40, c3: 60, mix: 0.8);
+		resonance = OteySoundBoard.ar(input, c1: 40, c3: 60, mix: 0.4);
 		Out.ar(outBus, resonance);
 	}).add;
 
 	s.sync;
 
-	SynthDef(\pianoString, { |outBus = 0, freq = 440, vel = 0.1, t_gate = 1|
+	SynthDef(\pianoString, { |outBus = 0, freq = 440, vel = 0.1, loss = 1.0, t_gate = 1|
 		var string, env;
 		env = EnvGen.ar(Env.perc(0.0001, 4.0), doneAction: Done.freeSelf);
-		string = OteyPianoStrings.ar(freq, vel, t_gate: t_gate, hammer_type: 2);
+		string = OteyPianoStrings.ar(freq, vel, loss: loss, t_gate: t_gate, hammer_type: 2);
 		Out.ar(outBus, (string * env) ! 2);
 	}).add;
 
 	SynthDef(\engine, {
 		var freq, num, denom;
-		var bpm = 480;
+		var bpm = 320;
 		var cps = bpm / 60;
-		var trig = Impulse.ar(cps);
-//		var mutate = CoinGate.ar(0.2, trig);
-		var mutate = DC.ar(1);
-		var justo = Justo.ar(trig, maxSize: 12,  root: 440, mutate: mutate, numerator: DC.ar(1), denominator: DC.ar(1));
-		SendReply.ar(trig, '/justo/note', [trig, justo.frequency]);
+		var quick = Impulse.ar(cps);
+		var slow = PulseDivider.ar(quick, div: 4);
+		var mutateSlowly = CoinGate.ar(0.002, quick);
+		var mutateQuickly = DC.ar(1);
+		var leftHand = Justo.ar(slow, maxSize: 32,  root: 110, mutate: mutateSlowly, numerator: DC.ar(1), denominator: DC.ar(1));
+		var rightHand = Justo.ar(quick, maxSize: 32,  root: 440, mutate: mutateQuickly, numerator: leftHand.numerator, denominator: leftHand.denominator);
+		SendReply.ar(slow, '/justo/note', [leftHand.frequency, 0.03, 2.0 / leftHand.distance]);
+		SendReply.ar(quick, '/justo/note', [rightHand.frequency, 1.0, 2.0 / rightHand.distance]);
 	}).add;
 
 	OSCdef(\relay, { |msg|
-		var freq = msg[4];
-		freq.postln;
-		if (freq.notNil and: { freq > 0 }) {
-			s.bind {
-				Synth.head(~sourceGroup, \pianoString, [
-					\outBus, ~pianoBus,
-					\freq, freq
-				]);
-			};
+		var path, node, reply, freq, loss, amp;
+		# path, node, reply, freq, loss, amp = msg;
+		[freq, loss, amp].postln;
+		s.bind {
+			Synth.head(~sourceGroup, \pianoString, [
+				\outBus, ~pianoBus,
+				\freq, freq,
+				\loss, loss,
+				\vel, amp
+			]);
 		};
 	}, '/justo/note');
 

@@ -33,6 +33,7 @@ namespace SCosa {
 	frequency,
 	numerator,
 	denominator,
+	distance,
 	nOut
       };
     };
@@ -69,6 +70,7 @@ namespace SCosa {
     float m_prev_trigger{0.0f};
     int64_t m_numerator{1};
     int64_t m_denominator{1};
+    int64_t m_distance{2};
     std::random_device m_rd;
     std::mt19937 m_gen{m_rd()};
     std::discrete_distribution<int> m_dist;

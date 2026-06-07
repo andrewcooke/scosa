@@ -27,12 +27,14 @@ namespace SCosa {
     float* frequency = out(Out::frequency);
     float* numeratorOut = out(Out::numerator);
     float* denominatorOut = out(Out::denominator);
+    float* distanceOut = out(Out::distance);
 
     const float root = m_root;
     int currentMelodyIndex = m_melody_index;
     float prevTrigger = m_prev_trigger;
     int64_t currentNumerator = m_numerator;
     int64_t currentDenominator = m_denominator;
+    int64_t currentDistance = m_distance;
     float currentFreq = m_root * currentNumerator / currentDenominator;
 
     for (int i = 0; i < nSamples; ++i) {
@@ -44,6 +46,7 @@ namespace SCosa {
 	readNextTransition(currentMelodyIndex, currentNumerator, currentDenominator);
 	reduceFraction(currentNumerator, currentDenominator);
         currentFreq = root * currentNumerator / currentDenominator;
+	currentDistance = currentNumerator + currentDenominator;
       }
       frequency[i] = currentFreq;
       numeratorOut[i] = currentNumerator,
@@ -55,6 +58,7 @@ namespace SCosa {
     m_prev_trigger = prevTrigger;
     m_numerator = currentNumerator;
     m_denominator = currentDenominator;
+    m_distance = currentDistance;
   }
 
   void Justo::changeMelody(const int melodyIndex, int64_t currentNumerator, int64_t currentDenominator, int64_t targetNumerator, int64_t targetDenominator) {
