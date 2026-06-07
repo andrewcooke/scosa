@@ -12,7 +12,7 @@ namespace SCosa {
                           }) {
     set_calc_function<Justo, &Justo::next>();
     m_melody.push_back(&m_weighted_transitions[0]); // first note is on the root
-    int intMaxSize = std::lrint(in0(In::maxSize));
+    int intMaxSize = static_cast<int>(in0(In::maxSize));
     for (int i = 0; i < intMaxSize; i++) m_melody.push_back(&randomTransition());
     m_root = in0(In::root);
     next(1);
@@ -38,7 +38,8 @@ namespace SCosa {
     for (int i = 0; i < nSamples; ++i) {
       float currentTrigger = trigger[i];
       if (currentTrigger > 0.0f && prevTrigger <= 0.0f) {
-	if (++currentMelodyIndex >= m_melody.size()) backToStart(currentMelodyIndex, currentNumerator, currentDenominator);
+	currentMelodyIndex++;
+	if (currentMelodyIndex >= m_melody.size()) backToStart(currentMelodyIndex, currentNumerator, currentDenominator);
 	if (mutate[i] > 0.0f) changeMelody(currentMelodyIndex, currentNumerator, currentDenominator, static_cast<int64_t>(numeratorIn[i]), static_cast<int64_t>(denominatorIn[i]));
 	readNextTransition(currentMelodyIndex, currentNumerator, currentDenominator);
 	reduceFraction(currentNumerator, currentDenominator);
@@ -57,17 +58,19 @@ namespace SCosa {
   }
 
   void Justo::changeMelody(const int melodyIndex, int64_t currentNumerator, int64_t currentDenominator, int64_t targetNumerator, int64_t targetDenominator) {
-    int64_t numerator = currentNumerator * targetDenominator;
-    int64_t denominator = currentDenominator * targetNumerator;
-    reduceFraction(numerator, denominator);
-    int currentDistance = numerator + denominator;
-    const Transition& candidateTransition = randomTransition();
-    const Transition currentTransition = *m_melody[melodyIndex];
-    numerator *= currentTransition.denominator * candidateTransition.numerator;
-    denominator *= currentTransition.numerator * candidateTransition.denominator;
-    reduceFraction(numerator, denominator);
-    int candidateDistance = numerator + denominator;
-    if (candidateDistance < currentDistance) m_melody[melodyIndex] = &candidateTransition;
+    if (melodyIndex < m_melody.size()) {  // why is this needed?! 
+      int64_t numerator = currentNumerator * targetDenominator;
+      int64_t denominator = currentDenominator * targetNumerator;
+      reduceFraction(numerator, denominator);
+      int currentDistance = numerator + denominator;
+      const Transition& candidateTransition = randomTransition();
+      const Transition currentTransition = *m_melody[melodyIndex];
+      numerator *= currentTransition.denominator * candidateTransition.numerator;
+      denominator *= currentTransition.numerator * candidateTransition.denominator;
+      reduceFraction(numerator, denominator);
+      int candidateDistance = numerator + denominator;
+      if (candidateDistance < currentDistance) m_melody[melodyIndex] = &candidateTransition;
+    }
   }
 
   void Justo::readNextTransition(const int melodyIndex, int64_t& numerator, int64_t& denominator) {
