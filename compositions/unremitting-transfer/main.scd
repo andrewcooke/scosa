@@ -15,7 +15,7 @@ s.waitForBoot({
 	SynthDef(\pianoSoundBoard, { |inBus = 0, outBus = 0|
 		var input, resonance;
 		input = In.ar(inBus, 2);
-		resonance = OteySoundBoard.ar(input, c1: 20, c3: 20, mix: 0.5);
+		resonance = OteySoundBoard.ar(input, c1: 40, c3: 60, mix: 0.8);
 		Out.ar(outBus, resonance);
 	}).add;
 
@@ -26,18 +26,19 @@ s.waitForBoot({
 	SynthDef(\pianoString, { |outBus = 0, freq = 440, vel = 0.1, t_gate = 1|
 		var string, env;
 		env = EnvGen.ar(Env.perc(0.0001, 4.0), doneAction: Done.freeSelf);
-		string = OteyPianoStrings.ar(freq, vel, t_gate: t_gate);
+		string = OteyPianoStrings.ar(freq, vel, t_gate: t_gate, hammer_type: 2);
 		Out.ar(outBus, (string * env) ! 2);
 	}).add;
 
 	SynthDef(\engine, {
+		var freq, num, denom;
 		var bpm = 480;
 		var cps = bpm / 60;
 		var trig = Impulse.ar(cps);
 		//var mutate = DC.ar(0.0);
 		var mutate = CoinGate.ar(0.2, trig);
-		var freq = Justo.ar(trig, maxSize: 12, mutate: mutate, root: 660);
-		SendReply.ar(trig, '/justo/note', [trig, freq]);
+		var justo = Justo.ar(trig, maxSize: 12,  root: 440, mutate: mutate);
+		SendReply.ar(trig, '/justo/note', [trig, justo.frequency]);
 	}).add;
 
 	OSCdef(\relay, { |msg|

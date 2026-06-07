@@ -13,7 +13,7 @@ namespace SCosa {
     set_calc_function<Justo, &Justo::next>();
     m_melody.push_back(&m_weighted_transitions[0]); // first note is on the root
     int intMaxSize = std::lrint(in0(In::maxSize));
-    for (int i = 0; i < intMaxSize; i++) m_melody.push_back(randomTransition());
+    for (int i = 0; i < intMaxSize; i++) m_melody.push_back(&randomTransition());
     m_root = in0(In::root);
     next(1);
   }
@@ -23,56 +23,66 @@ namespace SCosa {
     const float* trigger = in(In::trigger);
     const float* mutate = in(In::mutate);
     float* frequency = out(Out::frequency);
+    float* numerator = out(Out::numerator);
+    float* denominator = out(Out::denominator);
 
-    float prevInput = m_prev_input;
-    float currentFreq = m_root * m_numerator / m_denominator;
+    const float currentRoot = m_root;
+    int currentMelodyIndex = m_melody_index;
+    float prevTrigger = m_prev_trigger;
+    int64_t currentNumerator = m_numerator;
+    int64_t currentDenominator = m_denominator;
+    float currentFreq = m_root * currentNumerator / currentDenominator;
 
     for (int i = 0; i < nSamples; ++i) {
-      float currentInput = trigger[i];
-      if (currentInput > 0.0f && prevInput <= 0.0f) {
-	if (++m_melody_index == m_melody.size()) reset();
-	if (mutate[i] > 0.0f) change_melody();
-	update();
-	reduce();
-        currentFreq = m_root * m_numerator / m_denominator;
+      float currentTrigger = trigger[i];
+      if (currentTrigger > 0.0f && prevTrigger <= 0.0f) {
+	if (++currentMelodyIndex == m_melody.size()) reset(currentMelodyIndex, currentNumerator, currentDenominator);
+	if (mutate[i] > 0.0f) change_melody(currentMelodyIndex);
+	update(currentMelodyIndex, currentNumerator, currentDenominator);
+	reduce(currentNumerator, currentDenominator);
+        currentFreq = currentRoot * currentNumerator / currentDenominator;
       }
       frequency[i] = currentFreq;
-      prevInput = currentInput;
+      numerator[i] = m_numerator,
+      denominator[i] = m_denominator,
+      prevTrigger = currentTrigger;
     }
-    
-    m_prev_input = prevInput;
+
+    m_melody_index = currentMelodyIndex;
+    m_prev_trigger = prevTrigger;
+    m_numerator = currentNumerator;
+    m_denominator = currentDenominator;
   }
 
-  void Justo::change_melody() {
-    m_melody[m_melody_index] = randomTransition();
+  void Justo::change_melody(const int melodyIndex) {
+    m_melody[melodyIndex] = &randomTransition();
   }
 
-  void Justo::reset() {
-    m_melody_index = 0;
-    m_numerator = 1;
-    m_denominator = 1;
-  }
-
-  void Justo::update() {
-    m_root = in0(In::root);  // only sampled on trigger
-    if (m_melody_index < m_melody.size()) {
-      m_numerator *= m_melody[m_melody_index]->numerator;
-      m_denominator *= m_melody[m_melody_index]->denominator;
+  void Justo::update(const int melodyIndex, int64_t& numerator, int64_t& denominator) {
+    if (melodyIndex < m_melody.size()) {  // still needed?
+      numerator *= m_melody[melodyIndex]->numerator;
+      denominator *= m_melody[melodyIndex]->denominator;
     }
   }
 
-  void Justo::reduce() {
+  void Justo::reset(int& melodyIndex, int64_t& numerator, int64_t& denominator) {
+    melodyIndex = 0;
+    numerator = 1;
+    denominator = 1;
+  }
+
+  void Justo::reduce(int64_t& numerator, int64_t& denominator) {
     for (int i = 0; i < std::size(m_primes); i++) {
       int p = m_primes[i];
-      while (m_numerator % p == 0 && m_denominator % p == 0) {
-        m_numerator /= p;
-        m_denominator /= p;
+      while (numerator % p == 0 && denominator % p == 0) {
+        numerator /= p;
+        denominator /= p;
       }
     }
   }
   
-  const Justo::Transition* Justo::randomTransition() {
-    return &m_weighted_transitions[m_dist(m_gen)];
+  const Justo::Transition& Justo::randomTransition() {
+    return m_weighted_transitions[m_dist(m_gen)];
   }
   
 }

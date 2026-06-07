@@ -1,11 +1,11 @@
-class:: TrigGate
-summary:: Gate Triggers
+class:: Justo
+summary:: Just Intonation
 related:: TODO
 categories:: UGens>TODO
 
 description::
 
-Euclidean Rhythm Generator
+Just intonation melody generator
 
 
 classmethods::
