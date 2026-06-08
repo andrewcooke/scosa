@@ -13,13 +13,14 @@ s.waitForBoot({
 	~routerPath = '/justo/note';
 
 	~bpm = 320;
-	~measure = 32;
+	~measure = 64;
 	~ratio = 4;
 
 	SynthDef(\clock, { |quickBus = 0, slowBus = 0|
 		var cps = ~bpm / 60;
-		Out.ar(quickBus, Impulse.ar(cps));
-		Out.ar(slowBus, PulseDivider.ar(In.ar(quickBus), div: ~ratio));
+		var ticks = Impulse.ar(cps);
+		Out.ar(slowBus, PulseDivider.ar(ticks, div: ~ratio));
+		Out.ar(quickBus, EuCosa.ar(ticks, length: ~measure, beats: 0.92 * ~measure, thresh0: 0.9)[0]);
 	}).add;
 
 	SynthDef(\engine, { |quickBus = 0, slowBus = 0|
@@ -62,8 +63,8 @@ s.waitForBoot({
 
 	s.sync;
 
-	~quick = Bus.audio(s, 1);
-	~slow = Bus.audio(s, 1);
+	~quickBus = Bus.audio(s, 1);
+	~slowBus = Bus.audio(s, 1);
 	~pianoBus = Bus.audio(s, 2);
 	~compBus = Bus.audio(s, 2);
 	~revBus  = Bus.audio(s, 2);
@@ -71,8 +72,8 @@ s.waitForBoot({
 	~sourceGroup = Group.new(s);
 	~fxGroup     = Group.after(~sourceGroup); // FX group always runs AFTER sources
 
-	~clockNode = Synth.head(~sourceGroup, \clock, [\quickBus, ~quick, \slowBus, ~slow]);
-	~engineNode = Synth.after(~clockNode, \engine, [\quickBus, ~quick, \slowBus, ~slow]);
+	~clockNode = Synth.head(~sourceGroup, \clock, [\quickBus, ~quickBus, \slowBus, ~slowBus]);
+	~engineNode = Synth.after(~clockNode, \engine, [\quickBus, ~quickBus, \slowBus, ~slowBus]);
 
 	OSCdef(\router, { |msg|
 		var path, node, reply, freq, loss, amp;
