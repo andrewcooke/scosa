@@ -10,7 +10,28 @@ s.waitForBoot({
 
 	"loading unremitting-transfer main".postln;
 
-	~pianoBus = Bus.audio(s, 2);
+	~routerPath = '/justo/note';
+
+	~bpm = 320;
+	~measure = 32;
+	~ratio = 4;
+
+	SynthDef(\clock, { |quick = 0, slow = 0|
+		var cps = ~bpm / 60;
+		Out.ar(quick, Impulse.ar(cps));
+		Out.ar(slow, PulseDivider.ar(In.ar(quick), div: ~ratio));
+	}).add;
+
+	SynthDef(\engine, { |quick = 0, slow = 0|
+		var quickTrig = In.ar(quick);
+		var slowTrig = In.ar(slow);
+		var mutateSlowly = CoinGate.ar(0.002, In.ar(quick));
+		var mutateQuickly = DC.ar(1);
+		var leftHand = Justo.ar(slowTrig, maxSize: ~measure / ~ratio, root: 110, mutate: mutateSlowly, numerator: DC.ar(1), denominator: DC.ar(1));
+		var rightHand = Justo.ar(quickTrig, maxSize: ~measure, root: 440, mutate: mutateQuickly, numerator: leftHand.numerator, denominator: leftHand.denominator);
+		SendReply.ar(slowTrig,  ~routerPath, [leftHand.frequency,  0.1, 0.2 + (0.3 * 2.0 / leftHand.distance)]);
+		SendReply.ar(quickTrig, ~routerPath, [rightHand.frequency, 1.0, 0.1 + (0.9 * 2.0 / rightHand.distance)]);
+	}).add;
 
 	SynthDef(\pianoSoundBoard, { |inBus = 0, outBus = 0|
 		var input, resonance;
@@ -25,39 +46,6 @@ s.waitForBoot({
 		string = OteyPianoStrings.ar(freq, vel, loss: loss, t_gate: t_gate, hammer_type: 2);
 		Out.ar(outBus, (string * env) ! 2);
 	}).add;
-
-	SynthDef(\engine, {
-		var freq, num, denom;
-		var bpm = 320;
-		var cps = bpm / 60;
-		var ratio = 4;
-		var quick = Impulse.ar(cps);
-		var measure = 32;
-		var slow = PulseDivider.ar(quick, div: ratio);
-		var mutateSlowly = CoinGate.ar(0.002, quick);
-		var mutateQuickly = DC.ar(1);
-		var leftHand = Justo.ar(slow, maxSize: measure / ratio, root: 110, mutate: mutateSlowly, numerator: DC.ar(1), denominator: DC.ar(1));
-		var rightHand = Justo.ar(quick, maxSize: measure, root: 440, mutate: mutateQuickly, numerator: leftHand.numerator, denominator: leftHand.denominator);
-		SendReply.ar(slow,  '/justo/note', [leftHand.frequency,  0.1, 0.2 + (0.3 * 2.0 / leftHand.distance)]);
-		SendReply.ar(quick, '/justo/note', [rightHand.frequency, 1.0, 0.1 + (0.9 * 2.0 / rightHand.distance)]);
-	}).add;
-
-	OSCdef(\relay, { |msg|
-		var path, node, reply, freq, loss, amp;
-		# path, node, reply, freq, loss, amp = msg;
-		[freq, loss, amp].postln;
-		s.bind {
-			Synth.head(~sourceGroup, \pianoString, [
-				\outBus, ~pianoBus,
-				\freq, freq,
-				\loss, loss,
-				\vel, amp
-			]);
-		};
-	}, '/justo/note');
-
-	~compBus = Bus.audio(s, 2);
-	~revBus  = Bus.audio(s, 2);
 
 	SynthDef(\masterCompressor, { |inBus = 10, outBus = 12, thresh = 0.5, slopeBelow = 1,
 		                           slopeAbove = 0.3, clamp = 0.01, relax = 0.1|
@@ -74,15 +62,35 @@ s.waitForBoot({
 
 	s.sync;
 
+	~quick = Bus.audio(s, 1);
+	~slow = Bus.audio(s, 1);
+	~pianoBus = Bus.audio(s, 2);
+	~compBus = Bus.audio(s, 2);
+	~revBus  = Bus.audio(s, 2);
 
 	~sourceGroup = Group.new(s);
 	~fxGroup     = Group.after(~sourceGroup); // FX group always runs AFTER sources
 
-	~reverbNode = Synth(\masterReverb, [\inBus, ~revBus, \outBus, 0, \mix, 0.4, \room, 0.7], ~fxGroup, \addToTail);
-	~compNode   = Synth(\masterCompressor, [\inBus, ~compBus, \outBus, ~revBus, \thresh, 0.4], ~fxGroup, \addToHead);
+	~clockNode = Synth.head(~sourceGroup, \clock, [\quick, ~quick, \slow, ~slow]);
+	~engineNode = Synth.after(~clockNode, \engine, [\quick, ~quick, \slow, ~slow]);
 
-	~engineNode = Synth.head(~sourceGroup, \engine);
+	OSCdef(\router, { |msg|
+		var path, node, reply, freq, loss, amp;
+		# path, node, reply, freq, loss, amp = msg;
+		[freq, loss, amp].postln;
+		s.bind {
+			Synth.head(~sourceGroup, \pianoString, [
+				\outBus, ~pianoBus,
+				\freq, freq,
+				\loss, loss,
+				\vel, amp
+			]);
+		};
+	}, ~routerPath);
+
 	~soundBoardNode = Synth.tail(~sourceGroup, \pianoSoundBoard, [\inBus, ~pianoBus, \outBus, ~compBus]);
+	~compNode   = Synth(\masterCompressor, [\inBus, ~compBus, \outBus, ~revBus, \thresh, 0.4], ~fxGroup, \addToHead);
+	~reverbNode = Synth(\masterReverb, [\inBus, ~revBus, \outBus, 0, \mix, 0.4, \room, 0.7], ~fxGroup, \addToTail);
 
 	"unremitting-transfer main loaded".postln;
 
