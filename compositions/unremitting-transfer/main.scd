@@ -19,8 +19,6 @@ s.waitForBoot({
 		Out.ar(outBus, resonance);
 	}).add;
 
-	s.sync;
-
 	SynthDef(\pianoString, { |outBus = 0, freq = 440, vel = 0.1, loss = 1.0, t_gate = 1|
 		var string, env;
 		env = EnvGen.ar(Env.perc(0.0001, 4.0), doneAction: Done.freeSelf);
@@ -58,7 +56,8 @@ s.waitForBoot({
 		};
 	}, '/justo/note');
 
-	s.sync;
+	~compBus = Bus.audio(s, 2);
+	~revBus  = Bus.audio(s, 2);
 
 	SynthDef(\masterCompressor, { |inBus = 10, outBus = 12, thresh = 0.5, slopeBelow = 1,
 		                           slopeAbove = 0.3, clamp = 0.01, relax = 0.1|
@@ -73,8 +72,8 @@ s.waitForBoot({
 		ReplaceOut.ar(outBus, rev);
 	}).add;
 
-	~compBus = Bus.audio(s, 2);
-	~revBus  = Bus.audio(s, 2);
+	s.sync;
+
 
 	~sourceGroup = Group.new(s);
 	~fxGroup     = Group.after(~sourceGroup); // FX group always runs AFTER sources
@@ -82,9 +81,8 @@ s.waitForBoot({
 	~reverbNode = Synth(\masterReverb, [\inBus, ~revBus, \outBus, 0, \mix, 0.4, \room, 0.7], ~fxGroup, \addToTail);
 	~compNode   = Synth(\masterCompressor, [\inBus, ~compBus, \outBus, ~revBus, \thresh, 0.4], ~fxGroup, \addToHead);
 
-	~soundBoardNode = Synth.before(~compNode, \pianoSoundBoard, [\inBus, ~pianoBus, \outBus, ~compBus]);
-
-	~engine = Synth.head(~sourceGroup, \engine);
+	~engineNode = Synth.head(~sourceGroup, \engine);
+	~soundBoardNode = Synth.tail(~sourceGroup, \pianoSoundBoard, [\inBus, ~pianoBus, \outBus, ~compBus]);
 
 	"unremitting-transfer main loaded".postln;
 
