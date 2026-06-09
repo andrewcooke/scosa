@@ -1,8 +1,8 @@
 
 Justo : MultiOutUGen {
     
-    *ar { |trigger, maxSize = 32, root = 440, mutate, numerator, denominator|
-        var out = this.multiNew('audio', trigger, maxSize, root, mutate, numerator, denominator);
+    *ar { |trigger, maxSize = 32, root = 440, mutate, numerator, denominator, seed = 1|
+        var out = this.multiNew('audio', trigger, maxSize, root, mutate, numerator, denominator, seed);
 		^(frequency: out[0], numerator: out[1], denominator: out[2], distance: out[3])
     }
 

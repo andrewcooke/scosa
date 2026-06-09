@@ -5,16 +5,28 @@
 
 namespace SCosa {
 
-  Justo::Justo() : m_dist(std::size(m_weighted_transitions),
-                          0.0, static_cast<double>(std::size(m_weighted_transitions)),
-                          [](double i) {
-                            return m_weighted_transitions[static_cast<size_t>(i)].weight;
-                          }) {
+  Justo::Justo() :
+    m_gen(static_cast<int>(in0(In::seed))),
+    m_dist(std::size(m_weighted_transitions),
+	   0.0, static_cast<double>(std::size(m_weighted_transitions)),
+	   [](double i) {
+	     return m_weighted_transitions[static_cast<size_t>(i)].weight;
+	   }) {
     set_calc_function<Justo, &Justo::next>();
     m_melody.push_back(&m_weighted_transitions[0]); // first note is on the root
+    int64_t numerator = m_melody[0]->numerator;
+    int64_t denominator = m_melody[0]->denominator;
     int intMaxSize = static_cast<int>(in0(In::maxSize));
-    for (int i = 0; i < intMaxSize; i++) m_melody.push_back(&randomTransition());
+    for (int i = 1; i < intMaxSize; i++) {
+      m_melody.push_back(&randomTransition());
+      numerator *= m_melody.back()->numerator;
+      denominator *= m_melody.back()->denominator;
+      changeMelody(i, numerator, denominator, 1, 1);
+      applyNextTransition(i, numerator, denominator);
+      reduceFraction(numerator, denominator);
+    }
     m_root = in0(In::root);
+    int seed = static_cast<int>(in0(In::seed));
     next(1);
   }
   
@@ -43,7 +55,7 @@ namespace SCosa {
 	currentMelodyIndex++;
 	if (currentMelodyIndex >= m_melody.size()) backToStart(currentMelodyIndex, currentNumerator, currentDenominator);
 	if (mutate[i] > 0.0f) changeMelody(currentMelodyIndex, currentNumerator, currentDenominator, static_cast<int64_t>(numeratorIn[i]), static_cast<int64_t>(denominatorIn[i]));
-	readNextTransition(currentMelodyIndex, currentNumerator, currentDenominator);
+	applyNextTransition(currentMelodyIndex, currentNumerator, currentDenominator);
 	reduceFraction(currentNumerator, currentDenominator);
         currentFreq = root * currentNumerator / currentDenominator;
 	currentDistance = currentNumerator + currentDenominator;
@@ -74,11 +86,11 @@ namespace SCosa {
       denominator *= currentTransition.numerator * candidateTransition.denominator;
       reduceFraction(numerator, denominator);
       int candidateDistance = numerator + denominator;
-      if (candidateDistance < currentDistance) m_melody[melodyIndex] = &candidateTransition;
+      if (candidateDistance < currentDistance || (m_1_in_3(m_gen) && candidateDistance < 200)) m_melody[melodyIndex] = &candidateTransition;
     }
   }
 
-  void Justo::readNextTransition(const int melodyIndex, int64_t& numerator, int64_t& denominator) {
+  void Justo::applyNextTransition(const int melodyIndex, int64_t& numerator, int64_t& denominator) {
     if (melodyIndex < m_melody.size()) {  // why is this needed?!
       numerator *= m_melody[melodyIndex]->numerator;
       denominator *= m_melody[melodyIndex]->denominator;

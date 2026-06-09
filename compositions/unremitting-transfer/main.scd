@@ -15,12 +15,15 @@ s.waitForBoot({
 	~bpm = 320;
 	~measure = 64;
 	~ratio = 4;
+	~seed = 1;
+
+	s.randSeed = ~seed;
 
 	SynthDef(\clock, { |quickBus = 0, slowBus = 0|
 		var cps = ~bpm / 60;
 		var ticks = Impulse.ar(cps);
 		Out.ar(slowBus, PulseDivider.ar(ticks, div: ~ratio));
-		Out.ar(quickBus, EuCosa.ar(ticks, length: ~measure, beats: 0.92 * ~measure, thresh0: 0.9)[0]);
+		Out.ar(quickBus, EuCosa.ar(ticks, length: ~measure, beats: 0.77 * ~measure, thresh0: 0.9)[0]);
 	}).add;
 
 	SynthDef(\engine, { |quickBus = 0, slowBus = 0|

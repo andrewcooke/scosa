@@ -25,6 +25,7 @@ namespace SCosa {
 	mutate,
 	numerator,
 	denominator,
+	seed,
 	nIn
       };
     };
@@ -55,11 +56,15 @@ namespace SCosa {
       {6, 5, 2},
       {5, 6, 2},
       {7, 6, 1},
-      {6, 7, 1}
+      {6, 7, 1},
+      {1, 2, 1},
+      {2, 1, 1},
+      {1, 3, 1},
+      {3, 1, 1}
     };
     inline static const int m_primes[] = {2, 3, 5, 7};
     void changeMelody(const int melodyIndex, int64_t currentNumerator, int64_t currentDenominator, int64_t targetNumerator, int64_t targetDenominator);
-    void readNextTransition(const int melodyIndex, int64_t& numerator, int64_t& denominator);
+    void applyNextTransition(const int melodyIndex, int64_t& numerator, int64_t& denominator);
     static void backToStart(int& melodyIndex, int64_t& numerator, int64_t& denominator);
     void reduceFraction(int64_t& numerator, int64_t& denominator);
     const Transition& randomTransition();
@@ -71,9 +76,9 @@ namespace SCosa {
     int64_t m_numerator{1};
     int64_t m_denominator{1};
     int64_t m_distance{2};
-    std::random_device m_rd;
-    std::mt19937 m_gen{m_rd()};
+    std::mt19937 m_gen;
     std::discrete_distribution<int> m_dist;
+    std::bernoulli_distribution m_1_in_3{1.0 / 3.0};
   };
   
 }
