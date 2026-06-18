@@ -17,8 +17,6 @@ s.waitForBoot({
 	~ratio = 4;
 	~seed = 1;
 
-	s.randSeed = ~seed;
-
 	SynthDef(\clock, { |quickBus = 0, slowBus = 0|
 		var cps = ~bpm / 60;
 		var ticks = Impulse.ar(cps);
@@ -33,8 +31,8 @@ s.waitForBoot({
 		var mutateQuickly = DC.ar(1);
 		var leftHand = Justo.ar(slowTrig, maxSize: ~measure / ~ratio, root: 110, mutate: mutateSlowly, numerator: DC.ar(1), denominator: DC.ar(1));
 		var rightHand = Justo.ar(quickTrig, maxSize: ~measure, root: 440, mutate: mutateQuickly, numerator: leftHand.numerator, denominator: leftHand.denominator);
-		SendReply.ar(slowTrig,  ~routerPath, [leftHand.frequency,  0.1, 0.2 + (0.3 * 2.0 / leftHand.distance)]);
-		SendReply.ar(quickTrig, ~routerPath, [rightHand.frequency, 1.0, 0.1 + (0.9 * 2.0 / rightHand.distance)]);
+		SendReply.ar(slowTrig,  ~routerPath, [leftHand.frequency,  0.1, 0.5, leftHand.distance]);
+		SendReply.ar(quickTrig, ~routerPath, [rightHand.frequency, 1.0, 1.0, rightHand.distance]);
 	}).add;
 
 	SynthDef(\pianoSoundBoard, { |inBus = 0, outBus = 0|
@@ -79,15 +77,15 @@ s.waitForBoot({
 	~engineNode = Synth.after(~clockNode, \engine, [\quickBus, ~quickBus, \slowBus, ~slowBus]);
 
 	OSCdef(\router, { |msg|
-		var path, node, reply, freq, loss, amp;
-		# path, node, reply, freq, loss, amp = msg;
-		[freq, loss, amp].postln;
+		var path, node, reply, freq, loss, amp, dist;
+		# path, node, reply, freq, loss, amp, dist = msg;
+		[freq, loss, amp, dist].postln;
 		s.bind {
 			Synth.head(~sourceGroup, \pianoString, [
 				\outBus, ~pianoBus,
 				\freq, freq,
 				\loss, loss,
-				\vel, amp
+				\vel, amp * (0.3 + (0.7 * 2 / dist))
 			]);
 		};
 	}, ~routerPath);

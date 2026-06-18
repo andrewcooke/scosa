@@ -45,99 +45,46 @@ endif()
 
 message(STATUS "Install directory set to: ${CMAKE_INSTALL_PREFIX}")
 
-####################################################################################################
-# options
 option(SUPERNOVA "Build plugins for supernova" ON)
 option(SCSYNTH "Build plugins for scsynth" ON)
 option(NATIVE "Optimize for native architecture" OFF)
 option(STRICT "Use strict warning flags" OFF)
 option(NOVA_SIMD "Build plugins with nova-simd support." ON)
 
-####################################################################################################
-# include libraries
-
 if (NOVA_SIMD)
 	add_definitions(-DNOVA_SIMD)
 	include_directories(${SC_PATH}/external_libraries/nova-simd)
 endif()
 
-####################################################################################################
-# Begin target EuCosa
-
-set(EuCosa_cpp_files
-    plugins/EuCosa/EuCosa.cpp
-    plugins/EuCosa/EuCosa.hpp
+file(GLOB_RECURSE CORE_LIB_SOURCES 
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h"
 )
-set(EuCosa_sc_files
-    plugins/EuCosa/EuCosa.sc
-)
-set(EuCosa_schelp_files
-    plugins/EuCosa/EuCosa.schelp
-)
+add_library(scosa_core STATIC ${CORE_LIB_SOURCES})
+target_include_directories(scosa_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set_target_properties(scosa_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-sc_add_server_plugin(
-    "SCosa/EuCosa" # desination directory
-    "EuCosa" # target name
-    "${EuCosa_cpp_files}"
-    "${EuCosa_sc_files}"
-    "${EuCosa_schelp_files}"
-)
+macro(add_sc_plugin NAME)
+    sc_add_server_plugin(
+        "SCosa/${NAME}"
+        "${NAME}"
+        "plugins/${NAME}/${NAME}.cpp"
+        "plugins/${NAME}/${NAME}.hpp"
+        "plugins/${NAME}/${NAME}.sc"
+        "plugins/${NAME}/${NAME}.schelp"
+    )
+    if (SCSYNTH AND TARGET ${NAME}_scsynth)
+        target_link_libraries(${NAME}_scsynth PRIVATE scosa_core)
+    endif()
+    if (SUPERNOVA AND TARGET ${NAME}_supernova)
+        target_link_libraries(${NAME}_supernova PRIVATE scosa_core)
+    endif()
+endmacro()
 
-# End target EuCosa
-####################################################################################################
-
-####################################################################################################
-# Begin target TrigGate
-
-set(TrigGate_cpp_files
-    plugins/TrigGate/TrigGate.cpp
-    plugins/TrigGate/TrigGate.hpp
-)
-set(TrigGate_sc_files
-    plugins/TrigGate/TrigGate.sc
-)
-set(TrigGate_schelp_files
-    plugins/TrigGate/TrigGate.schelp
-)
-
-sc_add_server_plugin(
-    "SCosa/TrigGate" # desination directory
-    "TrigGate" # target name
-    "${TrigGate_cpp_files}"
-    "${TrigGate_sc_files}"
-    "${TrigGate_schelp_files}"
-)
-
-# End target TrigGate
-####################################################################################################
-
-####################################################################################################
-# Begin target Justo
-
-set(Justo_cpp_files
-    plugins/Justo/Justo.cpp
-    plugins/Justo/Justo.hpp
-)
-set(Justo_sc_files
-    plugins/Justo/Justo.sc
-)
-set(Justo_schelp_files
-    plugins/Justo/Justo.schelp
-)
-
-sc_add_server_plugin(
-    "SCosa/Justo" # desination directory
-    "Justo" # target name
-    "${Justo_cpp_files}"
-    "${Justo_sc_files}"
-    "${Justo_schelp_files}"
-)
-
-# End target Justo
-####################################################################################################
-
-####################################################################################################
-# END PLUGIN TARGET DEFINITION
-####################################################################################################
+add_sc_plugin(EuCosa)
+add_sc_plugin(TrigGate)
+add_sc_plugin(Justo)
 
 message(STATUS "Generating plugin targets done")
