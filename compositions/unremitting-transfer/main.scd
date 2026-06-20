@@ -12,25 +12,27 @@ s.waitForBoot({
 
 	~routerPath = '/justo/note';
 
-	~bpm = 320;
-	~measure = 64;
-	~ratio = 4;
-	~seed = 1;
+	~bpm = 400;
+	~rhythmLength = 16;
+	~slowDivider = 4;
+	~seed = 0;  // 0 is self-seed
 
-	SynthDef(\clock, { |quickBus = 0, slowBus = 0|
+	SynthDef(\clock, { |quickBus = 0, slowBus = 0, resetBus = 0|
 		var cps = ~bpm / 60;
 		var ticks = Impulse.ar(cps);
-		Out.ar(slowBus, PulseDivider.ar(ticks, div: ~ratio));
-		Out.ar(quickBus, EuCosa.ar(ticks, length: ~measure, beats: 0.77 * ~measure, thresh0: 0.9)[0]);
+		Out.ar(resetBus, PulseDivider.ar(ticks, div: ~rhythmLength));
+		Out.ar(slowBus, PulseDivider.ar(ticks, div: ~slowDivider));
+		Out.ar(quickBus, EuCosa.ar(ticks, length: ~rhythmLength, beats: 0.7 * ~rhythmLength, thresh0: 0.99)[0]);
 	}).add;
 
-	SynthDef(\engine, { |quickBus = 0, slowBus = 0|
+	SynthDef(\engine, { |quickBus = 0, slowBus = 0, resetBus = 0|
 		var quickTrig = In.ar(quickBus);
 		var slowTrig = In.ar(slowBus);
-		var mutateSlowly = CoinGate.ar(0.002, slowTrig);
+		var resetTrig = In.ar(resetBus);
+		var mutateSlowly = CoinGate.ar(0.1, slowTrig);
 		var mutateQuickly = DC.ar(1);
-		var leftHand = Justo.ar(slowTrig, maxSize: ~measure / ~ratio, root: 110, mutate: mutateSlowly, numerator: DC.ar(1), denominator: DC.ar(1));
-		var rightHand = Justo.ar(quickTrig, maxSize: ~measure, root: 440, mutate: mutateQuickly, numerator: leftHand.numerator, denominator: leftHand.denominator);
+		var leftHand = Justo.ar(slowTrig, maxSize: ~rhythmLength / ~slowDivider, root: 110, maxDistance: 10, mutate: mutateSlowly, reset: DC.ar(0), numerator: DC.ar(1), denominator: DC.ar(1), seed: ~seed);
+		var rightHand = Justo.ar(quickTrig, maxSize: ~rhythmLength, root: 440, maxDistance: 10, mutate: mutateQuickly, reset: resetTrig, numerator: leftHand.numerator, denominator: leftHand.denominator, seed: ~seed);
 		SendReply.ar(slowTrig,  ~routerPath, [leftHand.frequency,  0.1, 0.5, leftHand.distance]);
 		SendReply.ar(quickTrig, ~routerPath, [rightHand.frequency, 1.0, 1.0, rightHand.distance]);
 	}).add;
@@ -66,6 +68,7 @@ s.waitForBoot({
 
 	~quickBus = Bus.audio(s, 1);
 	~slowBus = Bus.audio(s, 1);
+	~resetBus = Bus.audio(s, 1);
 	~pianoBus = Bus.audio(s, 2);
 	~compBus = Bus.audio(s, 2);
 	~revBus  = Bus.audio(s, 2);

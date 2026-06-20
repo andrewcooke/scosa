@@ -6,7 +6,8 @@
 namespace SCosa {
 
   Justo::Justo() : JustoEngine(static_cast<int>(in0(In::seed)), in0(In::root),
-			       static_cast<int>(in0(In::maxSize))) {
+			       static_cast<int>(in0(In::maxSize)),
+			       static_cast<int>(in0(In::maxDistance))) {
     set_calc_function<Justo, &Justo::next>();
     next(1);
   }
@@ -15,6 +16,7 @@ namespace SCosa {
     
     const float* triggerIn = in(In::trigger);
     const float* mutateIn = in(In::mutate);
+    const float* resetIn = in(In::reset);
     const float* numeratorIn = in(In::numerator);
     const float* denominatorIn = in(In::denominator);
     float* frequencyOut = out(Out::frequency);
@@ -22,7 +24,7 @@ namespace SCosa {
     float* denominatorOut = out(Out::denominator);
     float* distanceOut = out(Out::distance);
 
-    JustoEngine::next(nSamples, triggerIn, mutateIn, numeratorIn, denominatorIn,
+    JustoEngine::next(nSamples, triggerIn, mutateIn, resetIn, numeratorIn, denominatorIn,
 		      frequencyOut, numeratorOut, denominatorOut, distanceOut);
   }
 

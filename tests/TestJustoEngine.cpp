@@ -7,17 +7,18 @@ namespace SCosa {
 
   class PublicJusto : public JustoEngine {
   public:
-    PublicJusto(int seed, float root, int maxSize) :
-      JustoEngine(seed, root, maxSize) {}
+    PublicJusto(int seed, float root, int maxSize, int maxDistance) :
+      JustoEngine(seed, root, maxSize, maxDistance) {}
     static void testReduceFraction(int64_t& num, int64_t& den) {
       reduceFraction(num, den);
     }
-    void testNext(int nSamples, const float* trigger, const float* mutate,
+    void testNext(int nSamples, const float* triggerIn, const float* mutateIn,
+		  const float *resetIn,
 		  const float* numeratorIn, const float* denominatorIn,
-		  float* frequency, float* numeratorOut, float* denominatorOut,
+		  float* frequencyOut, float* numeratorOut, float* denominatorOut,
 		  float *distanceOut) {
-      next(nSamples, trigger, mutate, numeratorIn, denominatorIn, frequency,
-	   numeratorOut, denominatorOut, distanceOut);
+      next(nSamples, triggerIn, mutateIn, resetIn, numeratorIn, denominatorIn,
+	   frequencyOut, numeratorOut, denominatorOut, distanceOut);
     }
   };
 
@@ -61,6 +62,7 @@ namespace SCosa {
     int nSamples;
     std::unique_ptr<float[]> triggerIn;
     std::unique_ptr<float[]> mutateIn;
+    std::unique_ptr<float[]> resetIn;
     std::unique_ptr<float[]> numeratorIn;
     std::unique_ptr<float[]> denominatorIn;
     std::unique_ptr<float[]> frequencyOut;
@@ -68,26 +70,28 @@ namespace SCosa {
     std::unique_ptr<float[]> denominatorOut;
     std::unique_ptr<float[]> distanceOut;
     PublicJusto justo;
-    StateJusto(int nSamples, int seed, float root, int maxSize) :
+    StateJusto(int nSamples, int seed, float root, int maxSize, int maxDistance) :
       nSamples(nSamples),
       triggerIn(std::make_unique<float[]>(nSamples)),
       mutateIn(std::make_unique<float[]>(nSamples)),
+      resetIn(std::make_unique<float[]>(nSamples)),
       numeratorIn(std::make_unique<float[]>(nSamples)),
       denominatorIn(std::make_unique<float[]>(nSamples)),
       frequencyOut(std::make_unique<float[]>(nSamples)),
       numeratorOut(std::make_unique<float[]>(nSamples)),
       denominatorOut(std::make_unique<float[]>(nSamples)),
       distanceOut(std::make_unique<float[]>(nSamples)),
-      justo(seed, root, maxSize) {
+      justo(seed, root, maxSize, maxDistance) {
       for (int i = 0; i < nSamples; i++) {
 	triggerIn[i] = (1+i) % 2;
 	mutateIn[i] = 1;
+	resetIn[i] = 0;
 	numeratorIn[i] = 1;
 	denominatorIn[i] = 1;
       }
     };
     void testNext(int n) {
-      justo.testNext(n, triggerIn.get(), mutateIn.get(),
+      justo.testNext(n, triggerIn.get(), mutateIn.get(), resetIn.get(),
 		     numeratorIn.get(), denominatorIn.get(),
 		     frequencyOut.get(), numeratorOut.get(),
 		     denominatorOut.get(), distanceOut.get());
@@ -97,13 +101,13 @@ namespace SCosa {
   TEST_CASE("JustoEngine::next") {
 
     SUBCASE("startup") {
-      StateJusto justo(1, 1, 440.0f, 1);
+      StateJusto justo(1, 1, 440.0f, 1, 200);
       justo.testNext(1);
     }
     
     SUBCASE("generate") {
       constexpr int n = 6;
-      StateJusto justo(n, 1, 440.0f, n/2);
+      StateJusto justo(n, 1, 440.0f, n/2, 200);
       for (int i = 0; i < n; i++) justo.mutateIn[i] = 0;
       justo.testNext(n);
       CHECK(justo.numeratorOut[0] == 1);
@@ -116,7 +120,7 @@ namespace SCosa {
     
     SUBCASE("mutate") {
       constexpr int n = 6;
-      StateJusto justo(n, 1, 440.0f, n/2);
+      StateJusto justo(n, 1, 440.0f, n/2, 200);
       for (int i = 0; i < n; i++) justo.mutateIn[i] = 0;
       justo.testNext(n);
       CHECK(justo.numeratorOut[0] == 1);
@@ -132,6 +136,13 @@ namespace SCosa {
       CHECK(justo.numeratorOut[2] == 2);
       CHECK(justo.denominatorOut[0] == 1);
       CHECK(justo.numeratorOut[4] == 7);  // this is worse instead of better
+      CHECK(justo.denominatorOut[0] == 1);
+      justo.testNext(n);
+      CHECK(justo.numeratorOut[0] == 1);
+      CHECK(justo.denominatorOut[0] == 1);
+      CHECK(justo.numeratorOut[2] == 2);
+      CHECK(justo.denominatorOut[0] == 1);
+      CHECK(justo.numeratorOut[4] == 1);  // improves
       CHECK(justo.denominatorOut[0] == 1);
     }
     
