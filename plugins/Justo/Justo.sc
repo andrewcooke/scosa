@@ -1,8 +1,14 @@
 
 Justo : MultiOutUGen {
     
-    *ar { |trigger, maxSize = 32, root = 440, maxDistance = 200, mutate, reset, numerator, denominator, seed = 0|
-        var out = this.multiNew('audio', trigger, maxSize, root, maxDistance, mutate, reset, numerator, denominator, seed);
+    *ar { |trigger, maxSize = 32, root = 440, maxDistance = 200, mutate = 0, reset = 0, reverse = 0, numerator = 1, denominator = 1, seed = 0|
+        var out;
+		if (mutate.rate != \audio) {mutate = K2A.ar(mutate)};
+		if (reset.rate != \audio) {reset = K2A.ar(reset)};
+		if (reverse.rate != \audio) {reverse = K2A.ar(reverse)};
+		if (numerator.rate != \audio) {numerator = K2A.ar(numerator)};
+		if (denominator.rate != \audio) {denominator = K2A.ar(denominator)};
+		out = this.multiNew('audio', trigger, maxSize, root, maxDistance, mutate, reset, reverse, numerator, denominator, seed);
 		^(frequency: out[0], numerator: out[1], denominator: out[2], distance: out[3])
     }
 
@@ -20,12 +26,12 @@ Justo : MultiOutUGen {
 				^"Justo input " ++ i ++ " must be scalar.";
 			};
 		};
-		(4..7).do { |i|
+		(4..8).do { |i|
 			if (inputs[i].rate != 'audio') {
 				^"Justo input " ++ i ++ " must be audio rate (ar).";
 			};
         };
-        if (inputs[8].rate != 'scalar') {
+        if (inputs[9].rate != 'scalar') {
             ^"Justo seed input must be scalar.";
         };
         ^this.checkValidInputs

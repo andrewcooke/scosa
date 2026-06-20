@@ -26,25 +26,37 @@ namespace SCosa {
   }
 
   void JustoEngine::next(int nSamples, const float* triggerIn, const float* mutateIn,
-			 const float* resetIn,
+			 const float* resetIn, const float* reverseIn,
 			 const float* numeratorIn, const float* denominatorIn,
 			 float* frequencyOut, float* numeratorOut, float* denominatorOut,
 			 float *distanceOut) {
 
     const float root = m_root;
     int currentMelodyIndex = m_melody_index;
+    int currentMelodyInc = m_melody_inc;
     float prevTrigger = m_prev_trigger;
     int64_t currentNumerator = m_numerator;
     int64_t currentDenominator = m_denominator;
     int64_t currentDistance = m_distance;
     float currentFreq = m_root * currentNumerator / currentDenominator;
+    int melodySize = m_melody.size();
     
     for (int i = 0; i < nSamples; ++i) {
       float currentTrigger = triggerIn[i];
       if (currentTrigger > 0.0f && prevTrigger <= 0.0f) {
-	currentMelodyIndex++;
-	if (resetIn[i] > 0.0f || currentMelodyIndex >= m_melody.size())
-	  backToStart(currentMelodyIndex, currentNumerator, currentDenominator);
+	if (reverseIn[i] > 0.0f) currentMelodyInc *= -1;
+	if (resetIn[i] > 0.0f) {
+	  backToStart(currentMelodyIndex, currentMelodyInc,
+		      currentNumerator, currentDenominator);
+	} else {
+	  currentMelodyIndex = currentMelodyIndex + currentMelodyInc;
+	  if (currentMelodyIndex == melodySize) {
+	    backToStart(currentMelodyIndex, currentMelodyInc,
+			currentNumerator, currentDenominator);
+	  } else if (currentMelodyIndex < 0) {
+	    currentMelodyIndex = melodySize - 1;
+	  }
+	}
 	int64_t targetNumerator = static_cast<int64_t>(numeratorIn[i]);
 	int64_t targetDenominator = static_cast<int64_t>(denominatorIn[i]);
 	if (mutateIn[i] > 0.0f)
@@ -68,6 +80,7 @@ namespace SCosa {
     }
 
     m_melody_index = currentMelodyIndex;
+    m_melody_inc = currentMelodyInc;
     m_prev_trigger = prevTrigger;
     m_numerator = currentNumerator;
     m_denominator = currentDenominator;
@@ -98,8 +111,9 @@ namespace SCosa {
     denominator *= m_melody[melodyIndex]->denominator;
   }
 
-  void JustoEngine::backToStart(int& melodyIndex, int64_t& numerator, int64_t& denominator) {
+  void JustoEngine::backToStart(int& melodyIndex, int& melodyInc, int64_t& numerator, int64_t& denominator) {
     melodyIndex = 0;
+    melodyInc = 1;
     numerator = 1;
     denominator = 1;
   }

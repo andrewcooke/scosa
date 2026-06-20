@@ -13,11 +13,12 @@ namespace SCosa {
       reduceFraction(num, den);
     }
     void testNext(int nSamples, const float* triggerIn, const float* mutateIn,
-		  const float *resetIn,
+		  const float *resetIn, const float* reverseIn,
 		  const float* numeratorIn, const float* denominatorIn,
 		  float* frequencyOut, float* numeratorOut, float* denominatorOut,
 		  float *distanceOut) {
-      next(nSamples, triggerIn, mutateIn, resetIn, numeratorIn, denominatorIn,
+      next(nSamples, triggerIn, mutateIn, resetIn, reverseIn,
+	   numeratorIn, denominatorIn,
 	   frequencyOut, numeratorOut, denominatorOut, distanceOut);
     }
   };
@@ -63,6 +64,7 @@ namespace SCosa {
     std::unique_ptr<float[]> triggerIn;
     std::unique_ptr<float[]> mutateIn;
     std::unique_ptr<float[]> resetIn;
+    std::unique_ptr<float[]> reverseIn;
     std::unique_ptr<float[]> numeratorIn;
     std::unique_ptr<float[]> denominatorIn;
     std::unique_ptr<float[]> frequencyOut;
@@ -75,6 +77,7 @@ namespace SCosa {
       triggerIn(std::make_unique<float[]>(nSamples)),
       mutateIn(std::make_unique<float[]>(nSamples)),
       resetIn(std::make_unique<float[]>(nSamples)),
+      reverseIn(std::make_unique<float[]>(nSamples)),
       numeratorIn(std::make_unique<float[]>(nSamples)),
       denominatorIn(std::make_unique<float[]>(nSamples)),
       frequencyOut(std::make_unique<float[]>(nSamples)),
@@ -86,12 +89,14 @@ namespace SCosa {
 	triggerIn[i] = (1+i) % 2;
 	mutateIn[i] = 1;
 	resetIn[i] = 0;
+	reverseIn[i] = 0;
 	numeratorIn[i] = 1;
 	denominatorIn[i] = 1;
       }
     };
     void testNext(int n) {
-      justo.testNext(n, triggerIn.get(), mutateIn.get(), resetIn.get(),
+      justo.testNext(n, triggerIn.get(), mutateIn.get(),
+		     resetIn.get(), reverseIn.get(),
 		     numeratorIn.get(), denominatorIn.get(),
 		     frequencyOut.get(), numeratorOut.get(),
 		     denominatorOut.get(), distanceOut.get());

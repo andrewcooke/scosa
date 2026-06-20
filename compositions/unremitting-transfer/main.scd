@@ -31,7 +31,7 @@ s.waitForBoot({
 		var resetTrig = In.ar(resetBus);
 		var mutateSlowly = CoinGate.ar(0.1, slowTrig);
 		var mutateQuickly = DC.ar(1);
-		var leftHand = Justo.ar(slowTrig, maxSize: ~rhythmLength / ~slowDivider, root: 110, maxDistance: 10, mutate: mutateSlowly, reset: DC.ar(0), numerator: DC.ar(1), denominator: DC.ar(1), seed: ~seed);
+		var leftHand = Justo.ar(slowTrig, maxSize: ~rhythmLength / ~slowDivider, root: 110, maxDistance: 10, mutate: mutateSlowly, seed: ~seed);
 		var rightHand = Justo.ar(quickTrig, maxSize: ~rhythmLength, root: 440, maxDistance: 10, mutate: mutateQuickly, reset: resetTrig, numerator: leftHand.numerator, denominator: leftHand.denominator, seed: ~seed);
 		SendReply.ar(slowTrig,  ~routerPath, [leftHand.frequency,  0.1, 0.5, leftHand.distance]);
 		SendReply.ar(quickTrig, ~routerPath, [rightHand.frequency, 1.0, 1.0, rightHand.distance]);

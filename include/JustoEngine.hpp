@@ -45,6 +45,7 @@ namespace SCosa {
     std::vector<const Transition*> m_melody;
     float m_root{0.0f};
     int m_melody_index{-1};
+    int m_melody_inc{1};
     float m_prev_trigger{0.0f};
     int64_t m_numerator{1};
     int64_t m_denominator{1};
@@ -55,7 +56,7 @@ namespace SCosa {
     std::bernoulli_distribution m_1_in_3{1.0 / 3.0};
 
     void next(int nSamples, const float* triggerIn, const float* mutateIn,
-	      const float* resetIn,
+	      const float* resetIn, const float* reverseIn,
 	      const float* numeratorIn, const float* denominatorIn,
 	      float* frequencyOut, float* numeratorOut, float* denominatorOut,
 	      float *distanceOut);
@@ -66,7 +67,7 @@ namespace SCosa {
 				  const Transition& transition);
     void applyNextTransition(const int melodyIndex,
 			     int64_t& numerator, int64_t& denominator);
-    void backToStart(int& melodyIndex,
+    void backToStart(int& melodyIndex, int& melodyInc,
 		     int64_t& numerator, int64_t& denominator);
     static void reduceFraction(int64_t& numerator, int64_t& denominator);
     const Transition& randomTransition();

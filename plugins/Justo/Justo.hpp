@@ -22,6 +22,7 @@ namespace SCosa {
 	maxDistance, // max distance; read only at startup
 	mutate,      // if 1 on trigger, current note mutates
 	reset,       // if 1 on trigger, sequence resets
+	reverse,     // if 1 on trigger, sequence direction reverses
 	numerator,   // from another Justo (or give 1); mutation tries to track this
 	denominator, // from another Justo (or give 1); mutation tries to track this
 	seed,        // random seed; read only at startup
