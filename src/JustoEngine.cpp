@@ -24,9 +24,9 @@ namespace SCosa {
     m_root = root;
   }
 
-  void JustoEngine::next(int nSamples, const float* trigger, const float* mutate,
+  void JustoEngine::next(int nSamples, const float* triggerIn, const float* mutateIn,
 			 const float* numeratorIn, const float* denominatorIn,
-			 float* frequency, float* numeratorOut, float* denominatorOut,
+			 float* frequencyOut, float* numeratorOut, float* denominatorOut,
 			 float *distanceOut) {
 
     const float root = m_root;
@@ -38,17 +38,18 @@ namespace SCosa {
     float currentFreq = m_root * currentNumerator / currentDenominator;
     
     for (int i = 0; i < nSamples; ++i) {
-      float currentTrigger = trigger[i];
+      float currentTrigger = triggerIn[i];
       if (currentTrigger > 0.0f && prevTrigger <= 0.0f) {
 	currentMelodyIndex++;
 	if (currentMelodyIndex >= m_melody.size()) backToStart(currentMelodyIndex, currentNumerator, currentDenominator);
-	if (mutate[i] > 0.0f) changeMelody(currentMelodyIndex, currentNumerator, currentDenominator, static_cast<int64_t>(numeratorIn[i]), static_cast<int64_t>(denominatorIn[i]));
+	if (mutateIn[i] > 0.0f) changeMelody(currentMelodyIndex, currentNumerator, currentDenominator,
+					   static_cast<int64_t>(numeratorIn[i]), static_cast<int64_t>(denominatorIn[i]));
 	applyNextTransition(currentMelodyIndex, currentNumerator, currentDenominator);
 	reduceFraction(currentNumerator, currentDenominator);
         currentFreq = root * currentNumerator / currentDenominator;
 	currentDistance = currentNumerator + currentDenominator;
       }
-      frequency[i] = currentFreq;
+      frequencyOut[i] = currentFreq;
       numeratorOut[i] = currentNumerator;
       denominatorOut[i] = currentDenominator;
       distanceOut[i] = currentDistance;
@@ -63,26 +64,22 @@ namespace SCosa {
   }
 
   void JustoEngine::changeMelody(const int melodyIndex, int64_t currentNumerator, int64_t currentDenominator, int64_t targetNumerator, int64_t targetDenominator) {
-    if (melodyIndex < m_melody.size()) {  // why is this needed?! 
-      int64_t numerator = currentNumerator * targetDenominator;
-      int64_t denominator = currentDenominator * targetNumerator;
-      reduceFraction(numerator, denominator);
-      int currentDistance = numerator + denominator;
-      const Transition& candidateTransition = randomTransition();
-      const Transition currentTransition = *m_melody[melodyIndex];
-      numerator *= currentTransition.denominator * candidateTransition.numerator;
-      denominator *= currentTransition.numerator * candidateTransition.denominator;
-      reduceFraction(numerator, denominator);
-      int candidateDistance = numerator + denominator;
-      if (candidateDistance < currentDistance || (m_1_in_3(m_gen) && candidateDistance < 200)) m_melody[melodyIndex] = &candidateTransition;
-    }
+    int64_t numerator = currentNumerator * targetDenominator;
+    int64_t denominator = currentDenominator * targetNumerator;
+    reduceFraction(numerator, denominator);
+    int currentDistance = numerator + denominator;
+    const Transition& candidateTransition = randomTransition();
+    const Transition currentTransition = *m_melody[melodyIndex];
+    numerator *= currentTransition.denominator * candidateTransition.numerator;
+    denominator *= currentTransition.numerator * candidateTransition.denominator;
+    reduceFraction(numerator, denominator);
+    int candidateDistance = numerator + denominator;
+    if (candidateDistance < currentDistance || (m_1_in_3(m_gen) && candidateDistance < 200)) m_melody[melodyIndex] = &candidateTransition;
   }
 
   void JustoEngine::applyNextTransition(const int melodyIndex, int64_t& numerator, int64_t& denominator) {
-    if (melodyIndex < m_melody.size()) {  // why is this needed?!
-      numerator *= m_melody[melodyIndex]->numerator;
-      denominator *= m_melody[melodyIndex]->denominator;
-    }
+    numerator *= m_melody[melodyIndex]->numerator;
+    denominator *= m_melody[melodyIndex]->denominator;
   }
 
   void JustoEngine::backToStart(int& melodyIndex, int64_t& numerator, int64_t& denominator) {

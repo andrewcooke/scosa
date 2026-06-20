@@ -13,17 +13,17 @@ namespace SCosa {
   
   void Justo::next(int nSamples) {
     
-    const float* trigger = in(In::trigger);
-    const float* mutate = in(In::mutate);
+    const float* triggerIn = in(In::trigger);
+    const float* mutateIn = in(In::mutate);
     const float* numeratorIn = in(In::numerator);
     const float* denominatorIn = in(In::denominator);
-    float* frequency = out(Out::frequency);
+    float* frequencyOut = out(Out::frequency);
     float* numeratorOut = out(Out::numerator);
     float* denominatorOut = out(Out::denominator);
     float* distanceOut = out(Out::distance);
 
-    JustoEngine::next(nSamples, trigger, mutate, numeratorIn, denominatorIn,
-		      frequency, numeratorOut, denominatorOut, distanceOut);
+    JustoEngine::next(nSamples, triggerIn, mutateIn, numeratorIn, denominatorIn,
+		      frequencyOut, numeratorOut, denominatorOut, distanceOut);
   }
 
 }

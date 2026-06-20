@@ -16,22 +16,22 @@ namespace SCosa {
   private:
     struct In {
       enum Type {
-	trigger,
-	maxSize,  // read only at startup
-	root,     // read only at startup
-	mutate,
-	numerator,
-	denominator,
-	seed,
+	trigger,     // 0 normally, 1, on trigger
+	maxSize,     // max pattern length; read only at startup
+	root,        // root note (frequency); read only at startup
+	mutate,      // if 1 on trigger, current note mutates
+	numerator,   // from another Justo (or give 1); mutation tries to track this
+	denominator, // from another Justo (or give 1); mutation tries to track this
+	seed,        // random seed; read only at startup
 	nIn
       };
     };
     struct Out {
-      enum Type {
-	frequency,
-	numerator,
-	denominator,
-	distance,
+      enum Type {    // all values change on trigger only
+	frequency,   // current note (frequency)
+	numerator,   // current numerator (root * numerator / denominator)
+	denominator, // current denominator
+	distance,    // current distance (measure of dissonance with input numerator / denoinator)
 	nOut
       };
     };

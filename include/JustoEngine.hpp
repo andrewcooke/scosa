@@ -24,7 +24,7 @@ namespace SCosa {
     };
     
     inline static const WeightedTransition m_weighted_transitions[] = {
-      {1, 1, 8},
+      {1, 1, 8},  // initialisation requires that m_weighted_transitions[0] be (1, 1, _)
       {3, 2, 2},
       {2, 3, 2},
       {4, 3, 4},
@@ -53,15 +53,17 @@ namespace SCosa {
     std::discrete_distribution<int> m_dist;
     std::bernoulli_distribution m_1_in_3{1.0 / 3.0};
 
-    void next(int nSamples, const float* trigger, const float* mutate,
+    void next(int nSamples, const float* triggerIn, const float* mutateIn,
 	      const float* numeratorIn, const float* denominatorIn,
-	      float* frequency, float* numeratorOut, float* denominatorOut,
+	      float* frequencyOut, float* numeratorOut, float* denominatorOut,
 	      float *distanceOut);
     void changeMelody(const int melodyIndex,
 		      int64_t currentNumerator, int64_t currentDenominator,
 		      int64_t targetNumerator, int64_t targetDenominator);
-    void applyNextTransition(const int melodyIndex, int64_t& numerator, int64_t& denominator);
-    static void backToStart(int& melodyIndex, int64_t& numerator, int64_t& denominator);
+    void applyNextTransition(const int melodyIndex,
+			     int64_t& numerator, int64_t& denominator);
+    static void backToStart(int& melodyIndex,
+			    int64_t& numerator, int64_t& denominator);
     static void reduceFraction(int64_t& numerator, int64_t& denominator);
     const Transition& randomTransition();
   
