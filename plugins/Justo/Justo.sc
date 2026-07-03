@@ -3,9 +3,20 @@ Justo : MultiOutUGen {
     
     *ar { |trigger, maxSize = 32, root = 440, maxDistance = 200, mutate = 0, reset = 0, reverse = 0, numerator = 1, denominator = 1, seed = 0|
         var out;
-		if (mutate.rate != \audio) {mutate = K2A.ar(mutate)};
-		if (reset.rate != \audio) {reset = K2A.ar(reset)};
-		if (reverse.rate != \audio) {reverse = K2A.ar(reverse)};
+		var expand = { |input|
+			if (input.rate == \scalar) {
+				if (input < 1.0) {
+					(TRand.ar(0.0, 1.0, trigger) < input).asAudioRateInput;
+				} {
+					(((PulseCount.ar(trigger) - 1) % input.asInteger) < 0.5).asAudioRateInput;
+				};
+			} {
+				if (input.rate != \audio) { K2A.ar(input) } { input };
+			};
+		};
+		mutate = expand.(mutate);
+		reset = expand.(reset);
+		reverse = expand.(reverse);
 		if (numerator.rate != \audio) {numerator = K2A.ar(numerator)};
 		if (denominator.rate != \audio) {denominator = K2A.ar(denominator)};
 		out = this.multiNew('audio', trigger, maxSize, root, maxDistance, mutate, reset, reverse, numerator, denominator, seed);
