@@ -9,7 +9,7 @@ s.waitForBoot({
 
 	~routerPath = '/justo/note';
 
-	~bpm = 360;
+	~bpm = 300;
 	~rhythmLength = 16;
 	~slowDivider = 4;
 	~seed = 0;  // 0 is self-seed
@@ -28,7 +28,7 @@ s.waitForBoot({
 		var resetTrig = In.ar(resetBus);
 		var leftHand = Justo.ar(slowTrig, maxSize: ~rhythmLength / ~slowDivider, root: 110, maxDistance: 10, mutate: 0.1, seed: ~seed);
 		var rightHand = Justo.ar(quickTrig, maxSize: ~rhythmLength, root: 440, maxDistance: 10, mutate: 1, reset: resetTrig, reverse: 0.1, numerator: leftHand.numerator, denominator: leftHand.denominator, seed: ~seed);
-		SendReply.ar(slowTrig,  ~routerPath, [leftHand.frequency,  0.1, 0.5, leftHand.distance]);
+		// SendReply.ar(slowTrig,  ~routerPath, [leftHand.frequency,  0.1, 0.5, leftHand.distance]);
 		SendReply.ar(quickTrig, ~routerPath, [rightHand.frequency, 1.0, 1.0, rightHand.distance]);
 	}).add;
 

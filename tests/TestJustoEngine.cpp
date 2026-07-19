@@ -7,8 +7,8 @@ namespace SCosa {
 
   class PublicJusto : public JustoEngine {
   public:
-    PublicJusto(int seed, float root, int maxSize, int maxDistance) :
-      JustoEngine(seed, root, maxSize, maxDistance) {}
+    PublicJusto(int seed, float root, int maxSize, float maxRatio, int maxDistance) :
+      JustoEngine(seed, root, maxSize, maxRatio, maxDistance) {}
     static void testReduceFraction(int64_t& num, int64_t& den) {
       reduceFraction(num, den);
     }
@@ -72,7 +72,7 @@ namespace SCosa {
     std::unique_ptr<float[]> denominatorOut;
     std::unique_ptr<float[]> distanceOut;
     PublicJusto justo;
-    StateJusto(int nSamples, int seed, float root, int maxSize, int maxDistance) :
+    StateJusto(int nSamples, int seed, float root, int maxSize, float maxRatio, int maxDistance) :
       nSamples(nSamples),
       triggerIn(std::make_unique<float[]>(nSamples)),
       mutateIn(std::make_unique<float[]>(nSamples)),
@@ -84,7 +84,7 @@ namespace SCosa {
       numeratorOut(std::make_unique<float[]>(nSamples)),
       denominatorOut(std::make_unique<float[]>(nSamples)),
       distanceOut(std::make_unique<float[]>(nSamples)),
-      justo(seed, root, maxSize, maxDistance) {
+      justo(seed, root, maxSize, maxRatio, maxDistance) {
       for (int i = 0; i < nSamples; i++) {
 	triggerIn[i] = (1+i) % 2;
 	mutateIn[i] = 1;
@@ -106,13 +106,13 @@ namespace SCosa {
   TEST_CASE("JustoEngine::next") {
 
     SUBCASE("startup") {
-      StateJusto justo(1, 1, 440.0f, 1, 200);
+      StateJusto justo(1, 1, 440.0f, 1, 1000.0f, 200);
       justo.testNext(1);
     }
     
     SUBCASE("generate") {
       constexpr int n = 6;
-      StateJusto justo(n, 1, 440.0f, n/2, 200);
+      StateJusto justo(n, 1, 440.0f, n/2, 1000.0f, 200);
       for (int i = 0; i < n; i++) justo.mutateIn[i] = 0;
       justo.testNext(n);
       CHECK(justo.numeratorOut[0] == 1);
@@ -125,7 +125,7 @@ namespace SCosa {
     
     SUBCASE("mutate") {
       constexpr int n = 6;
-      StateJusto justo(n, 1, 440.0f, n/2, 200);
+      StateJusto justo(n, 1, 440.0f, n/2, 1000.0f, 200);
       for (int i = 0; i < n; i++) justo.mutateIn[i] = 0;
       justo.testNext(n);
       CHECK(justo.numeratorOut[0] == 1);
