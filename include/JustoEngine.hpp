@@ -61,13 +61,8 @@ namespace SCosa {
 	      const float* numeratorIn, const float* denominatorIn,
 	      float* frequencyOut, float* numeratorOut, float* denominatorOut,
 	      float *distanceOut);
-    void changeMelody(const int melodyIndex,
-		      int64_t currentNumerator, int64_t currentDenominator,
-		      int64_t targetNumerator, int64_t targetDenominator);
-    std::pair<int, bool> transitionDistance(int64_t startNumerator, int64_t startDenominator,
-					    const Transition& transition);
-    void applyNextTransition(const int melodyIndex,
-			     int64_t& numerator, int64_t& denominator);
+    void applyTransition(const Transition& transition, int64_t& numerator, int64_t& denominator,
+			 int64_t targetNumerator, int64_t targetDenoinator);
     void backToStart(int& melodyIndex, int& melodyInc,
 		     int64_t& numerator, int64_t& denominator);
     static void reduceFraction(int64_t& numerator, int64_t& denominator);

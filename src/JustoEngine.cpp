@@ -16,12 +16,13 @@ namespace SCosa {
     int64_t numerator = m_melody[0]->numerator;
     int64_t denominator = m_melody[0]->denominator;
     for (int i = 1; i < maxSize; i++) {
-      m_melody.push_back(&randomTransition());
-      numerator *= m_melody.back()->numerator;
-      denominator *= m_melody.back()->denominator;
-      changeMelody(i, numerator, denominator, 1, 1);
-      applyNextTransition(i, numerator, denominator);
-      reduceFraction(numerator, denominator);
+      m_melody.push_back(&m_weighted_transitions[0]);
+      // TODO - initial populn
+      //      numerator *= m_melody.back()->numerator;
+      //      denominator *= m_melody.back()->denominator;
+      //      changeMelody(i, numerator, denominator, 1, 1);
+      //      applyNextTransition(i, numerator, denominator);
+      //      reduceFraction(numerator, denominator);
     }
     m_root = root;
   }
@@ -43,8 +44,10 @@ namespace SCosa {
     int melodySize = m_melody.size();
     
     for (int i = 0; i < nSamples; ++i) {
+      
       float currentTrigger = triggerIn[i];
       if (currentTrigger > 0.0f && prevTrigger <= 0.0f) {
+	
 	if (reverseIn[i] > 0.0f) currentMelodyInc *= -1;
 	if (resetIn[i] > 0.0f) {
 	  backToStart(currentMelodyIndex, currentMelodyInc,
@@ -58,20 +61,32 @@ namespace SCosa {
 	    currentMelodyIndex = melodySize - 1;
 	  }
 	}
-	int64_t targetNumerator = static_cast<int64_t>(numeratorIn[i]);
-	int64_t targetDenominator = static_cast<int64_t>(denominatorIn[i]);
-	if (mutateIn[i] > 0.0f)
-	  changeMelody(currentMelodyIndex, currentNumerator, currentDenominator,
-		       static_cast<int64_t>(numeratorIn[i]),
-		       static_cast<int64_t>(denominatorIn[i]));
-	applyNextTransition(currentMelodyIndex, currentNumerator, currentDenominator);
-	reduceFraction(currentNumerator, currentDenominator);
+
+	if (mutateIn[i]) {
+	  int64_t targetNumerator = static_cast<int64_t>(numeratorIn[i]);
+	  int64_t targetDenominator = static_cast<int64_t>(denominatorIn[i]);
+
+	  int64_t defaultNumerator = currentNumerator;
+	  int64_t defaultDenominator = currentDenominator;
+	  applyTransition(*m_melody[currentMelodyIndex], defaultNumerator, defaultDenominator,
+			  targetNumerator, targetDenominator);
+	  int defaultDistance = defaultNumerator + defaultDenominator;
+
+	  int64_t altNumerator = currentNumerator;
+	  int64_t altDenominator = currentDenominator;
+	  const Transition& altTransition = randomTransition();
+	  applyTransition(altTransition, altNumerator, altDenominator,
+			  targetNumerator, targetDenominator);
+	  int altDistance = altNumerator + altDenominator;
+
+	  //	  if (altDistance < defaultDistance || m_1_in_3(m_gen)) m_melody[currentMelodyIndex] = &altTransition;
+	  if (altDistance < defaultDistance) m_melody[currentMelodyIndex] = &altTransition;
+	}
+	
+	applyTransition(*m_melody[currentMelodyIndex], currentNumerator, currentDenominator, 1, 1);
+
         currentFreq = root * currentNumerator / currentDenominator;
-	// reuse target values since they are not persistent
-	targetNumerator *= currentDenominator;
-	targetDenominator *= currentNumerator;
-	reduceFraction(targetNumerator, targetDenominator);
-	currentDistance = targetNumerator + targetDenominator;
+	currentDistance = currentNumerator + currentDenominator;
       }
       frequencyOut[i] = currentFreq;
       numeratorOut[i] = currentNumerator;
@@ -88,38 +103,32 @@ namespace SCosa {
     m_distance = currentDistance;
   }
 
-  void JustoEngine::changeMelody(const int melodyIndex, int64_t currentNumerator, int64_t currentDenominator,
-				 int64_t targetNumerator, int64_t targetDenominator) {
-    // normalise to a target of (1,1)
-    int64_t startNumerator = currentNumerator * targetDenominator;
-    int64_t startDenominator = currentDenominator * targetNumerator;
-    int defaultDistance = transitionDistance(startNumerator, startDenominator, *m_melody[melodyIndex]).first;
-    const Transition& candidateTransition = randomTransition();
-    std::pair<int, bool> p = transitionDistance(startNumerator, startDenominator, candidateTransition);
-    if (p.second && (p.first < defaultDistance || (m_1_in_3(m_gen) && p.first < m_max_distance))) m_melody[melodyIndex] = &candidateTransition;
-  }
-  
-  std::pair<int, bool> JustoEngine::transitionDistance(int64_t startNumerator, int64_t startDenominator,
-						       const JustoEngine::Transition& transition) {
-    int64_t numerator = startNumerator * transition.numerator;
-    int64_t denominator = startDenominator * transition.denominator;
+  void JustoEngine::applyTransition(const Transition& transition, int64_t& numerator, int64_t& denominator,
+				    int64_t targetNumerator, int64_t targetDenominator) {
+    // normalise to target
+    numerator *= targetDenominator;
+    denominator *= targetNumerator;
+    float ratio = numerator * transition.numerator / static_cast<float>(denominator * transition.denominator);
+    if (ratio > m_max_ratio || ratio < 1 / m_max_ratio) {
+      if (ratio > 1 / ratio) {
+	numerator *= transition.denominator;
+	denominator *= transition.numerator;
+      } else {
+	numerator *= transition.numerator;
+	denominator *= transition.denominator;
+      }
+    } else {
+      numerator *= transition.numerator;
+      denominator *= transition.denominator;
+    }
     reduceFraction(numerator, denominator);
-    float ratio = numerator / static_cast<float>(denominator);
-    return {numerator + denominator, ratio > 1 / m_max_ratio && ratio < m_max_ratio};
-  }
-
-  void JustoEngine::applyNextTransition(const int melodyIndex, int64_t& numerator, int64_t& denominator) {
-    numerator *= m_melody[melodyIndex]->numerator;
-    denominator *= m_melody[melodyIndex]->denominator;
-    float ratio = numerator / static_cast<float>(denominator);
-    if (ratio > m_max_ratio || ratio < 1 / m_max_ratio) std::swap(numerator, denominator);
   }
 
   void JustoEngine::backToStart(int& melodyIndex, int& melodyInc, int64_t& numerator, int64_t& denominator) {
     melodyIndex = 0;
     melodyInc = 1;
-    numerator = 1;
-    denominator = 1;
+    //    numerator = 1;
+    //    denominator = 1;
   }
 
   void JustoEngine::reduceFraction(int64_t& numerator, int64_t& denominator) {

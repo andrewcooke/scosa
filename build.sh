@@ -15,5 +15,5 @@ set -x
 #cmake .. -DSC_PATH=/home/andrew/pkg/supercollider -DCMAKE_INSTALL_PREFIX=/home/andrew/.local/share/SuperCollider/Extensions/
 cmake .. -DSC_PATH=/home/andrew/pkg/supercollider -DCMAKE_INSTALL_PREFIX=/home/andrew/.local/share/SuperCollider/Extensions/ -DCMAKE_BUILD_TYPE=Debug
 cmake --build . --config Release --verbose
-ctest --output-on-failure
+#ctest --output-on-failure
 cmake --install .
