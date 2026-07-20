@@ -9,27 +9,33 @@ s.waitForBoot({
 
 	~routerPath = '/justo/note';
 
-	~bpm = 300;
-	~rhythmLength = 16;
-	~slowDivider = 4;
+	~bpm = 200;
+	~rhythmLength = 32;
+	~slowDivider = 8;
 	~seed = 0;  // 0 is self-seed
+
+	~quickBus = Bus.audio(s, 1);
+	~slowBus  = Bus.audio(s, 1);
+	~resetBus = Bus.audio(s, 1);
 
 	SynthDef(\clock, { |quickBus = 0, slowBus = 0, resetBus = 0|
 		var cps = ~bpm / 60;
 		var ticks = Impulse.ar(cps);
-		Out.ar(resetBus, PulseDivider.ar(ticks, div: ~rhythmLength));
-		Out.ar(slowBus, PulseDivider.ar(ticks, div: ~slowDivider));
-		Out.ar(quickBus, EuCosa.ar(ticks, length: ~rhythmLength, beats: 0.7 * ~rhythmLength, thresh0: 0.99)[0]);
+		Out.ar(resetBus, PulseDivider.ar(ticks, div: ~slowDivider));
+		// Out.ar(slowBus, PulseDivider.ar(ticks, div: ~slowDivider));
+		Out.ar(slowBus, PulseDivider.ar(ticks, div: ~rhythmLength));
+		Out.ar(quickBus, ticks);
+		// Out.ar(quickBus, EuCosa.ar(ticks, length: ~rhythmLength, beats: 0.7 * ~rhythmLength, thresh0: 0.99)[0]);
 	}).add;
 
 	SynthDef(\engine, { |quickBus = 0, slowBus = 0, resetBus = 0|
 		var quickTrig = In.ar(quickBus);
 		var slowTrig = In.ar(slowBus);
 		var resetTrig = In.ar(resetBus);
-		var leftHand = Justo.ar(slowTrig, maxSize: ~rhythmLength / ~slowDivider, root: 110, maxDistance: 10, mutate: 0.1, seed: ~seed);
-		var rightHand = Justo.ar(quickTrig, maxSize: ~rhythmLength, root: 440, maxDistance: 10, mutate: 1, reset: resetTrig, reverse: 0.1, numerator: leftHand.numerator, denominator: leftHand.denominator, seed: ~seed);
-		// SendReply.ar(slowTrig,  ~routerPath, [leftHand.frequency,  0.1, 0.5, leftHand.distance]);
-		SendReply.ar(quickTrig, ~routerPath, [rightHand.frequency, 1.0, 1.0, rightHand.distance]);
+		var leftHand = Justo.ar(slowTrig, maxSize: ~rhythmLength / ~slowDivider, maxRatio: 2, root: 110, maxDistance: 6, mutate: 1, seed: ~seed);
+		var rightHand = Justo.ar(quickTrig, maxSize: ~rhythmLength, maxRatio: 2, root: 660, maxDistance: 15, mutate: 0.1, reset: resetTrig, reverse: 0, numerator: leftHand.numerator, denominator: leftHand.denominator, seed: ~seed);
+		// SendReply.ar(slowTrig,  ~routerPath, [leftHand.frequency,  leftHand.distance, leftHand.numerator, leftHand.denominator, rightHand.numerator, rightHand.denominator]);
+		SendReply.ar(quickTrig, ~routerPath, [rightHand.frequency, rightHand.distance, rightHand.numerator, rightHand.denominator, leftHand.numerator, leftHand.denominator]);
 	}).add;
 
 	s.sync;
@@ -39,15 +45,25 @@ s.waitForBoot({
 	if (~index.notNil) {
 		~midiOut = MIDIOut(~index);
 		~midiOut.connect(~index);
+		~allNotesOff.value(~midiOut, 0);
 	} {
 		"ERROR: Neutron not found in destinations.".warn;
+	};
+
+	~allNotesOff = { |midiOut, channel = 0|
+		if (midiOut.notNil) {
+			"Sending MIDI Panic / Note Off reset to Neutron...".postln;
+			128.do({ |note| midiOut.noteOff(channel, note, 0) });
+			midiOut.control(channel, 123, 0);
+			midiOut.control(channel, 121, 0);
+		};
 	};
 
 	~freq2BentMidi = { |freq|
 		var midi = freq.cpsmidi;
 		var note = midi.round;
 		var offset = midi - note;
-		var bend = (8192 + (offset * (8192 / 2))).clip(0, 16383);
+		var bend = offset.linlin(-1.0, 1.0, 0, 16383).asInteger;
 		[note.asInteger, bend.asInteger];
 	};
 
@@ -63,10 +79,10 @@ s.waitForBoot({
 	};
 
 	OSCFunc({ |msg|
-		var path, node, reply, freq, loss, amp, dist;
-		# path, node, reply, freq, loss, amp, dist = msg;
-		[freq, loss, amp, dist].postln;
-		~sendMidi.value(freq, 0.25, ~midiOut, 0);
+		var path, node, reply, freq, dist, num, den, lnum, lden;
+		# path, node, reply, freq, dist, num, den, lnum, lden = msg;
+		[freq, dist, num, den, lnum, lden].postln;
+		~sendMidi.value(freq, 0.9 * 60 / ~bpm, ~midiOut, 0);
 	}, ~routerPath);
 
 	~clockSynth = Synth(\clock, [\quickBus, ~quickBus, \slowBus, ~slowBus, \resetBus, ~resetBus]);

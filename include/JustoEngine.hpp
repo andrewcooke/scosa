@@ -24,15 +24,15 @@ namespace SCosa {
     };
     
     inline static const WeightedTransition m_weighted_transitions[] = {
-      {1, 1, 8},  // initialisation requires that m_weighted_transitions[0] be (1, 1, _)
-      {3, 2, 2},
-      {2, 3, 2},
-      {4, 3, 4},
-      {3, 4, 4},
-      {5, 4, 4},
-      {4, 5, 4},
-      {6, 5, 2},
-      {5, 6, 2},
+      {1, 1, 1},  // initialisation requires that m_weighted_transitions[0] be (1, 1, _)
+      {3, 2, 1},
+      {2, 3, 1},
+      {4, 3, 1},
+      {3, 4, 1},
+      {5, 4, 1},
+      {4, 5, 1},
+      {6, 5, 1},
+      {5, 6, 1},
       {7, 6, 1},
       {6, 7, 1},
       {1, 2, 1},
@@ -61,8 +61,7 @@ namespace SCosa {
 	      const float* numeratorIn, const float* denominatorIn,
 	      float* frequencyOut, float* numeratorOut, float* denominatorOut,
 	      float *distanceOut);
-    void applyTransition(const Transition& transition, int64_t& numerator, int64_t& denominator,
-			 int64_t targetNumerator, int64_t targetDenoinator);
+    void applyTransition(const Transition& transition, int64_t& numerator, int64_t& denominator);
     void backToStart(int& melodyIndex, int& melodyInc,
 		     int64_t& numerator, int64_t& denominator);
     static void reduceFraction(int64_t& numerator, int64_t& denominator);
