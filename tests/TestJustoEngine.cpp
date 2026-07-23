@@ -12,13 +12,14 @@ namespace SCosa {
     static void testReduceFraction(int64_t& num, int64_t& den) {
       reduceFraction(num, den);
     }
-    void testNext(int nSamples, const float* triggerIn, const float* mutateIn,
+    void testNext(int nSamples, const float* triggerIn,
+		  const float* mutateBadIn, const float* mutateAllIn,
 		  const float *resetIn, const float* reverseIn,
 		  const float* numeratorIn, const float* denominatorIn,
 		  float* frequencyOut, float* numeratorOut, float* denominatorOut,
 		  float *distanceOut) {
-      next(nSamples, triggerIn, mutateIn, resetIn, reverseIn,
-	   numeratorIn, denominatorIn,
+      next(nSamples, triggerIn, mutateBadIn, mutateAllIn,
+	   resetIn, reverseIn, numeratorIn, denominatorIn,
 	   frequencyOut, numeratorOut, denominatorOut, distanceOut);
     }
   };
@@ -62,7 +63,8 @@ namespace SCosa {
   public:
     int nSamples;
     std::unique_ptr<float[]> triggerIn;
-    std::unique_ptr<float[]> mutateIn;
+    std::unique_ptr<float[]> mutateBadIn;
+    std::unique_ptr<float[]> mutateAllIn;
     std::unique_ptr<float[]> resetIn;
     std::unique_ptr<float[]> reverseIn;
     std::unique_ptr<float[]> numeratorIn;
@@ -75,7 +77,8 @@ namespace SCosa {
     StateJusto(int nSamples, int seed, float root, int maxSize, float maxRatio, int maxDistance) :
       nSamples(nSamples),
       triggerIn(std::make_unique<float[]>(nSamples)),
-      mutateIn(std::make_unique<float[]>(nSamples)),
+      mutateBadIn(std::make_unique<float[]>(nSamples)),
+      mutateAllIn(std::make_unique<float[]>(nSamples)),
       resetIn(std::make_unique<float[]>(nSamples)),
       reverseIn(std::make_unique<float[]>(nSamples)),
       numeratorIn(std::make_unique<float[]>(nSamples)),
@@ -87,7 +90,8 @@ namespace SCosa {
       justo(seed, root, maxSize, maxRatio, maxDistance) {
       for (int i = 0; i < nSamples; i++) {
 	triggerIn[i] = (1+i) % 2;
-	mutateIn[i] = 1;
+	mutateBadIn[i] = 1;
+	mutateAllIn[i] = 1;
 	resetIn[i] = 0;
 	reverseIn[i] = 0;
 	numeratorIn[i] = 1;
@@ -95,7 +99,8 @@ namespace SCosa {
       }
     };
     void testNext(int n) {
-      justo.testNext(n, triggerIn.get(), mutateIn.get(),
+      justo.testNext(n, triggerIn.get(),
+		     mutateBadIn.get(), mutateAllIn.get(), 
 		     resetIn.get(), reverseIn.get(),
 		     numeratorIn.get(), denominatorIn.get(),
 		     frequencyOut.get(), numeratorOut.get(),
@@ -113,7 +118,7 @@ namespace SCosa {
     SUBCASE("generate") {
       constexpr int n = 6;
       StateJusto justo(n, 1, 440.0f, n/2, 1000.0f, 200);
-      for (int i = 0; i < n; i++) justo.mutateIn[i] = 0;
+      for (int i = 0; i < n; i++) justo.mutateAllIn[i] = 0;
       justo.testNext(n);
       CHECK(justo.numeratorOut[0] == 1);
       CHECK(justo.denominatorOut[0] == 1);
@@ -126,7 +131,7 @@ namespace SCosa {
     SUBCASE("mutate") {
       constexpr int n = 6;
       StateJusto justo(n, 1, 440.0f, n/2, 1000.0f, 200);
-      for (int i = 0; i < n; i++) justo.mutateIn[i] = 0;
+      for (int i = 0; i < n; i++) justo.mutateAllIn[i] = 0;
       justo.testNext(n);
       CHECK(justo.numeratorOut[0] == 1);
       CHECK(justo.denominatorOut[0] == 1);
@@ -134,7 +139,7 @@ namespace SCosa {
       CHECK(justo.denominatorOut[0] == 1);
       CHECK(justo.numeratorOut[4] == 6);
       CHECK(justo.denominatorOut[0] == 1);
-      for (int i = 0; i < n; i++) justo.mutateIn[i] = 1;
+      for (int i = 0; i < n; i++) justo.mutateAllIn[i] = 1;
       justo.testNext(n);
       CHECK(justo.numeratorOut[0] == 1);
       CHECK(justo.denominatorOut[0] == 1);

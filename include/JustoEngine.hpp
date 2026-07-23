@@ -53,18 +53,20 @@ namespace SCosa {
     float m_max_ratio;
     int m_max_distance;
     std::mt19937 m_gen;
-    std::discrete_distribution<int> m_dist;
-    std::bernoulli_distribution m_1_in_3{1.0 / 3.0};
-
-    void next(int nSamples, const float* triggerIn, const float* mutateIn,
+    std::discrete_distribution<size_t> m_dist;
+    
+    void next(int nSamples, const float* triggerIn,
+	      const float* mutateBadIn, const float* mutateAllIn,
 	      const float* resetIn, const float* reverseIn,
 	      const float* numeratorIn, const float* denominatorIn,
 	      float* frequencyOut, float* numeratorOut, float* denominatorOut,
 	      float *distanceOut);
-    void applyTransition(const Transition& transition, int64_t& numerator, int64_t& denominator);
-    void backToStart(int& melodyIndex, int& melodyInc,
-		     int64_t& numerator, int64_t& denominator);
+    const Transition* bestTransitionOf(int n, int64_t numerator, int64_t denominator);
+    bool testTransition(const Transition& transition, int64_t& numerator, int64_t& denominator);
+    int applyTransition(const Transition& transition, int64_t& numerator, int64_t& denominator);
+    void backToStart(int& melodyIndex, int& melodyInc);
     static void reduceFraction(int64_t& numerator, int64_t& denominator);
+    static int reducedDistance(int64_t numerator, int64_t denominator);
     const Transition& randomTransition();
   
   };

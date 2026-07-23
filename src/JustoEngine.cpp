@@ -6,28 +6,22 @@ namespace SCosa {
   JustoEngine::JustoEngine(int seed, float root, int maxSize, float maxRatio, int maxDistance) :
     m_gen(seed ? seed : std::random_device{}()),
     m_dist(std::size(m_weighted_transitions),
-	   0.0, static_cast<double>(std::size(m_weighted_transitions)),
+    	   0.0, static_cast<double>(std::size(m_weighted_transitions)),
 	   [](double i) {
 	     return m_weighted_transitions[static_cast<size_t>(i)].weight;
 	   }),
     m_max_ratio(maxRatio),
     m_max_distance(maxDistance) {
-    m_melody.push_back(&m_weighted_transitions[0]); // first note is on the root
+    for (int i = 0; i < maxSize; i++) {
+      m_melody.push_back(&m_weighted_transitions[0]);
+    }
     int64_t numerator = m_melody[0]->numerator;
     int64_t denominator = m_melody[0]->denominator;
-    for (int i = 1; i < maxSize; i++) {
-      m_melody.push_back(&m_weighted_transitions[0]);
-      // TODO - initial populn
-      //      numerator *= m_melody.back()->numerator;
-      //      denominator *= m_melody.back()->denominator;
-      //      changeMelody(i, numerator, denominator, 1, 1);
-      //      applyNextTransition(i, numerator, denominator);
-      //      reduceFraction(numerator, denominator);
-    }
     m_root = root;
   }
 
-  void JustoEngine::next(int nSamples, const float* triggerIn, const float* mutateIn,
+  void JustoEngine::next(int nSamples, const float* triggerIn,
+			 const float* mutateBadIn, const float* mutateAllIn,
 			 const float* resetIn, const float* reverseIn,
 			 const float* numeratorIn, const float* denominatorIn,
 			 float* frequencyOut, float* numeratorOut, float* denominatorOut,
@@ -52,44 +46,34 @@ namespace SCosa {
 	
 	if (reverseIn[i] > 0.0f) currentMelodyInc *= -1;
 	if (resetIn[i] > 0.0f) {
-	  backToStart(currentMelodyIndex, currentMelodyInc,
-		      currentNumerator, currentDenominator);
+	  backToStart(currentMelodyIndex, currentMelodyInc);
+	  currentNumerator = 1;
+	  currentDenominator = 1;
 	} else {
 	  currentMelodyIndex = currentMelodyIndex + currentMelodyInc;
 	  if (currentMelodyIndex == melodySize) {
-	    backToStart(currentMelodyIndex, currentMelodyInc,
-			currentNumerator, currentDenominator);
+	    backToStart(currentMelodyIndex, currentMelodyInc);
 	  } else if (currentMelodyIndex < 0) {
 	    currentMelodyIndex = melodySize - 1;
 	  }
 	}
 
-	if (mutateIn[i]) {
-
-	  int64_t alt1Numerator = currentNumerator;
-	  int64_t alt1Denominator = currentDenominator;
-	  const Transition& alt1Transition = randomTransition();
-	  applyTransition(alt1Transition, alt1Numerator, alt1Denominator);
-	  int alt1Distance = alt1Numerator + alt1Denominator;
-
-	  int64_t alt2Numerator = currentNumerator;
-	  int64_t alt2Denominator = currentDenominator;
-	  const Transition& alt2Transition = randomTransition();
-	  applyTransition(alt2Transition, alt2Numerator, alt2Denominator);
-	  int alt2Distance = alt2Numerator + alt2Denominator;
-
-	  if (alt1Distance < alt2Distance) {
-	    if (alt1Distance < m_max_distance) m_melody[currentMelodyIndex] = &alt1Transition;
-	  } else {
-	    if (alt2Distance < m_max_distance) m_melody[currentMelodyIndex] = &alt2Transition;
-	  }
+	bool mutate = mutateAllIn[i];
+	if (!mutate && mutateBadIn[i]) {
+	  int64_t new_numerator = currentNumerator;
+	  int64_t new_denominator = currentDenominator;
+	  Transition t = *m_melody[currentMelodyIndex];
+	  mutate = (t.numerator == 1 && t.denominator == 1) || !testTransition(t, new_numerator, new_denominator);
+	}
+	if (mutate) {
+	  m_melody[currentMelodyIndex] = bestTransitionOf(2, currentNumerator, currentDenominator);
 	}
 	
-	applyTransition(*m_melody[currentMelodyIndex], currentNumerator, currentDenominator);
-	currentDistance = currentNumerator + currentDenominator;
+	currentDistance = applyTransition(*m_melody[currentMelodyIndex],
+					  currentNumerator, currentDenominator);
       }
-      frequencyOut[i] = root * currentNumerator * targetNumerator /
-	(currentDenominator * targetDenominator);
+      frequencyOut[i] = (root * currentNumerator * targetNumerator) /
+	                (currentDenominator * targetDenominator);
       numeratorOut[i] = currentNumerator;
       denominatorOut[i] = currentDenominator;
       distanceOut[i] = currentDistance;
@@ -104,35 +88,44 @@ namespace SCosa {
     m_distance = currentDistance;
   }
 
-  void JustoEngine::applyTransition(const Transition& transition, int64_t& numerator, int64_t& denominator) {
-    // normalise to target
+  const JustoEngine::Transition* JustoEngine::bestTransitionOf(int n, int64_t numerator, int64_t denominator) {
+    const Transition* best = nullptr;
+    int best_distance = 0;
+    for (int i = 0; i < n; i++) {
+      const Transition* t = &randomTransition();
+      int64_t n = numerator * t->numerator;
+      int64_t d = denominator * t->denominator;
+      int distance = reducedDistance(n, d);
+      if (!best || distance < best_distance || best_distance == 2) {
+	best = t;
+	best_distance = distance;
+      }
+    }
+    return best;
+  }
+  
+  bool JustoEngine::testTransition(const Transition& transition, int64_t& numerator, int64_t& denominator) {
+    numerator *= transition.numerator;
+    denominator *= transition.denominator;
+    float ratio = numerator / static_cast<float>(denominator);
+    reduceFraction(numerator, denominator);
+    int distance = numerator + denominator;
+    return (((ratio >= 1 && ratio < m_max_ratio) || (ratio < 1 && 1 / ratio < m_max_ratio)) && distance <= m_max_distance);
+  }
+  
+  int JustoEngine::applyTransition(const Transition& transition, int64_t& numerator, int64_t& denominator) {
     int64_t new_numerator = numerator;
     int64_t new_denominator = denominator;
-    float ratio = new_numerator * transition.numerator / static_cast<float>(new_denominator * transition.denominator);
-    if (ratio > m_max_ratio || ratio < 1 / m_max_ratio) {
-      if (ratio > 1 / ratio) {
-	new_numerator *= transition.denominator;
-	new_denominator *= transition.numerator;
-      } else {
-	new_numerator *= transition.numerator;
-	new_denominator *= transition.denominator;
-      }
-    } else {
-      new_numerator *= transition.numerator;
-      new_denominator *= transition.denominator;
-    }
-    reduceFraction(new_numerator, new_denominator);
-    if (new_numerator + new_denominator <= m_max_distance) {
+    if (testTransition(transition, new_numerator, new_denominator)) {
       numerator = new_numerator;
       denominator = new_denominator;
     }
+    return numerator + denominator;
   }
 
-  void JustoEngine::backToStart(int& melodyIndex, int& melodyInc, int64_t& numerator, int64_t& denominator) {
+  void JustoEngine::backToStart(int& melodyIndex, int& melodyInc) {
     melodyIndex = 0;
     melodyInc = 1;
-    //    numerator = 1;
-    //    denominator = 1;
   }
 
   void JustoEngine::reduceFraction(int64_t& numerator, int64_t& denominator) {
@@ -143,6 +136,11 @@ namespace SCosa {
         denominator /= p;
       }
     }
+  }
+  
+  int JustoEngine::reducedDistance(int64_t numerator, int64_t denominator) {
+    reduceFraction(numerator, denominator);
+    return numerator + denominator;
   }
   
   const JustoEngine::Transition& JustoEngine::randomTransition() {

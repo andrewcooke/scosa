@@ -21,7 +21,8 @@ namespace SCosa {
 	maxRatio,    // max ratio of current note to root; read only at startup
 	root,        // root note (frequency); read only at startup
 	maxDistance, // max distance; read only at startup
-	mutate,      // if 1 on trigger, current note mutates (or prob, or count)
+	mutateBad,   // if 1 on trigger and current note unplayable, mutate (or prob, or count)
+	mutateAll,   // if 1 on trigger mutate (or prob, or count)
 	reset,       // if 1 on trigger, sequence resets (or prob, or count)
 	reverse,     // if 1 on trigger, sequence direction reverses (or prob, or count)
 	numerator,   // from another Justo (or give 1); mutation tries to track this

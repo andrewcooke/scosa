@@ -15,7 +15,8 @@ namespace SCosa {
   void Justo::next(int nSamples) {
     
     const float* triggerIn = in(In::trigger);
-    const float* mutateIn = in(In::mutate);
+    const float* mutateBadIn = in(In::mutateBad);
+    const float* mutateAllIn = in(In::mutateAll);
     const float* resetIn = in(In::reset);
     const float* reverseIn = in(In::reverse);
     const float* numeratorIn = in(In::numerator);
@@ -25,8 +26,8 @@ namespace SCosa {
     float* denominatorOut = out(Out::denominator);
     float* distanceOut = out(Out::distance);
 
-    JustoEngine::next(nSamples, triggerIn, mutateIn, resetIn, reverseIn,
-		      numeratorIn, denominatorIn,
+    JustoEngine::next(nSamples, triggerIn, mutateBadIn, mutateAllIn,
+		      resetIn, reverseIn, numeratorIn, denominatorIn,
 		      frequencyOut, numeratorOut, denominatorOut, distanceOut);
   }
 

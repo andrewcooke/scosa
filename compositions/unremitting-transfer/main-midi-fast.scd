@@ -9,11 +9,11 @@ s.waitForBoot({
 
 	~routerPath = '/justo/note';
 
-	~bpm = 600;
-	~rhythmLength = 15;
-	~slowDivider = 16;
+	~bpm = 50;
+	~rhythmLength = 4;
+	~slowDivider = 8;
 	~seed = 0;  // 0 is self-seed
-	~maxDist = 20;
+	~maxDist = 10;
 
 	~quickBus = Bus.audio(s, 1);
 	~slowBus  = Bus.audio(s, 1);
@@ -22,7 +22,7 @@ s.waitForBoot({
 	SynthDef(\clock, { |quickBus = 0, slowBus = 0, resetBus = 0|
 		var cps = ~bpm / 60;
 		var ticks = Impulse.ar(cps);
-		// Out.ar(resetBus, PulseDivider.ar(ticks, div: ~slowDivider));
+		Out.ar(resetBus, PulseDivider.ar(ticks, div: ~slowDivider));
 		// Out.ar(slowBus, PulseDivider.ar(ticks, div: ~slowDivider));
 		Out.ar(slowBus, PulseDivider.ar(ticks, div: ~rhythmLength));
 		Out.ar(quickBus, ticks);
@@ -33,8 +33,8 @@ s.waitForBoot({
 		var quickTrig = In.ar(quickBus);
 		var slowTrig = In.ar(slowBus);
 		var resetTrig = In.ar(resetBus);
-		var leftHand = Justo.ar(slowTrig, maxSize: ~rhythmLength, maxRatio: 2, root: 660, maxDistance: 10, mutateAll: 1, seed: ~seed);
-		var rightHand = Justo.ar(quickTrig, maxSize: ~rhythmLength, maxRatio: 3, root: 660, maxDistance: ~maxDist, mutateBad: 1, mutateAll: 7, reset: 0, reverse: 0, numerator: leftHand.numerator, denominator: leftHand.denominator, seed: ~seed);
+		var leftHand = Justo.ar(slowTrig, maxSize: ~rhythmLength, maxRatio: 2, root: 660, maxDistance: 10, mutate: 1, seed: ~seed);
+		var rightHand = Justo.ar(quickTrig, maxSize: ~rhythmLength, maxRatio: 3, root: 660, maxDistance: ~maxDist, mutate: 0.1, reset: resetTrig, reverse: 0, numerator: leftHand.numerator, denominator: leftHand.denominator, seed: ~seed);
 		// SendReply.ar(slowTrig,  ~routerPath, [leftHand.frequency,  leftHand.distance, leftHand.numerator, leftHand.denominator, rightHand.numerator, rightHand.denominator]);
 		SendReply.ar(quickTrig, ~routerPath, [rightHand.frequency, rightHand.distance, rightHand.numerator, rightHand.denominator, leftHand.distance, leftHand.numerator, leftHand.denominator]);
 	}).add;
