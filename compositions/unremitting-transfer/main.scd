@@ -7,36 +7,46 @@ s.waitForBoot({
 
 	"loading unremitting-transfer main".postln;
 
-	~routerPath = '/justo/note';
+	~noteOnPath = '/justo/noteOn';
+	~noteOffPath = '/justo/noteOff';
 
-	~bpm = 600;
-	~rhythmLength = 15;
+	~bpm = 30;
+	~rhythmLength = 4;
 	~slowDivider = 16;
 	~seed = 0;  // 0 is self-seed
-	~maxDist = 20;
+	~maxDist = 10;
+	~delay = 5;
 
+	~preQuickBus = Bus.audio(s, 1);
 	~quickBus = Bus.audio(s, 1);
+	~preSlowBus  = Bus.audio(s, 1);
 	~slowBus  = Bus.audio(s, 1);
 	~resetBus = Bus.audio(s, 1);
 
-	SynthDef(\clock, { |quickBus = 0, slowBus = 0, resetBus = 0|
+	SynthDef(\clock, { |preQuickBus = 0, quickBus = 0, preSlowBus = 0, slowBus = 0, resetBus = 0|
 		var cps = ~bpm / 60;
 		var ticks = Impulse.ar(cps);
 		// Out.ar(resetBus, PulseDivider.ar(ticks, div: ~slowDivider));
 		// Out.ar(slowBus, PulseDivider.ar(ticks, div: ~slowDivider));
-		Out.ar(slowBus, PulseDivider.ar(ticks, div: ~rhythmLength));
-		Out.ar(quickBus, ticks);
+		Out.ar(preSlowBus, PulseDivider.ar(ticks, div: ~rhythmLength));
+		Out.ar(slowBus, DelayN.ar(PulseDivider.ar(ticks, div: ~rhythmLength), 0.01, ~delay * SampleDur.ir));
+		Out.ar(preQuickBus, ticks);
+		Out.ar(quickBus, DelayN.ar(ticks, 0.01, ~delay * SampleDur.ir));
 		// Out.ar(quickBus, EuCosa.ar(ticks, length: ~rhythmLength, beats: 0.7 * ~rhythmLength, thresh0: 0.99)[0]);
 	}).add;
 
-	SynthDef(\engine, { |quickBus = 0, slowBus = 0, resetBus = 0|
+	SynthDef(\engine, { |preQuickBus = 0, quickBus = 0, preSlowBus = 0, slowBus = 0, resetBus = 0|
+		var preQuickTrig = In.ar(preQuickBus);
 		var quickTrig = In.ar(quickBus);
+		var preSlowTrig = In.ar(preSlowBus);
 		var slowTrig = In.ar(slowBus);
 		var resetTrig = In.ar(resetBus);
-		var leftHand = Justo.ar(slowTrig, maxSize: ~rhythmLength, maxRatio: 2, root: 660, maxDistance: 10, mutateAll: 1, seed: ~seed);
-		var rightHand = Justo.ar(quickTrig, maxSize: ~rhythmLength, maxRatio: 3, root: 660, maxDistance: ~maxDist, mutateBad: 1, mutateAll: 7, reset: 0, reverse: 0, numerator: leftHand.numerator, denominator: leftHand.denominator, seed: ~seed);
-		// SendReply.ar(slowTrig,  ~routerPath, [leftHand.frequency,  leftHand.distance, leftHand.numerator, leftHand.denominator, rightHand.numerator, rightHand.denominator]);
-		SendReply.ar(quickTrig, ~routerPath, [rightHand.frequency, rightHand.distance, rightHand.numerator, rightHand.denominator, leftHand.distance, leftHand.numerator, leftHand.denominator]);
+		var leftHand = Justo.ar(slowTrig, maxSize: ~rhythmLength, maxRatio: 2, root: 110, maxDistance: 10, mutateAll: 0.1, seed: ~seed);
+		var rightHand = Justo.ar(quickTrig, maxSize: ~rhythmLength, maxRatio: 3, root: 660, maxDistance: ~maxDist, mutateBad: 1, mutateAll: 0.1, reset: ~rhythmLength, reverse: 0, numerator: leftHand.numerator, denominator: leftHand.denominator, seed: ~seed);
+		SendReply.ar(preSlowTrig,  ~noteOffPath, [0]);
+		SendReply.ar(slowTrig,  ~noteOnPath, [leftHand.frequency,  leftHand.distance, leftHand.numerator, leftHand.denominator, 0, 0]);
+		SendReply.ar(preQuickTrig,  ~noteOffPath, [1]);
+		SendReply.ar(quickTrig, ~noteOnPath, [rightHand.frequency, rightHand.distance, rightHand.numerator, rightHand.denominator, leftHand.distance, 0, 0]); //leftHand.numerator, leftHand.denominator]);
 	}).add;
 
 	s.sync;
@@ -67,29 +77,44 @@ s.waitForBoot({
 		[note.asInteger, bend.asInteger];
 	};
 
-	~sendMidi = { |freq, durn, amp, midiOut, channel=0|
-		var note, bend;
-		# note, bend = ~freq2BentMidi.value(freq);
-		Routine({
-			midiOut.bend(channel, bend);
-			midiOut.noteOn(channel, note, amp);
-			durn.wait;
-			midiOut.noteOff(channel, note, 0);
-		}).play(SystemClock);
+	~sendMidiOn = { |note, bend, amp, midiOut, channel=0|
+		midiOut.bend(channel, bend);
+		midiOut.noteOn(channel, note, amp);
 	};
 
-	OSCFunc({ |msg|
-		var path, node, reply, freq, dist, num, den, ldist, lnum, lden, durn, amp;
-		# path, node, reply, freq, dist, num, den, ldist, lnum, lden = msg;
-		// [freq, dist, num, den, lnum, lden].postln;
-		durn = 0.99 * 60 / ~bpm;
-		amp = 127 - (127 * dist / (~maxDist + 1)).asInteger;
-		[freq, durn, amp, dist, ldist].postln;
-		~sendMidi.value(freq, durn, amp, ~midiOut, 0);
-	}, ~routerPath);
+	~sendMidiOff = { |prev, midiOut, channel=0|
+		if (prev != 0) {midiOut.noteOff(channel, prev);};
+	};
 
-	~clockSynth = Synth(\clock, [\quickBus, ~quickBus, \slowBus, ~slowBus, \resetBus, ~resetBus]);
-	~engineSynth = Synth(\engine, [\quickBus, ~quickBus, \slowBus, ~slowBus, \resetBus, ~resetBus], addAction: \addAfter);
+	~prevHigh = 0;
+	~prevLow = 0;
+
+	OSCFunc({ |msg|
+		var path, node, reply, freq, dist, num, den, ldist, lnum, lden, durn, amp, note, bend;
+		# path, node, reply, freq, dist, num, den, ldist, lnum, lden = msg;
+		# note, bend = ~freq2BentMidi.value(freq);
+		[note, bend, dist, ldist].postln;
+		if (ldist == 0) {
+			~sendMidiOn.value(note, bend, 127, ~midiOut, 0);
+			~prevLow = note;
+		} {
+			~sendMidiOn.value(note, bend, 127, ~midiOut, 0);
+			~prevHigh = note;
+		};
+	}, ~noteOnPath);
+
+	OSCFunc({ |msg|
+		var path, node, reply, ldist;
+		# path, node, reply, ldist = msg;
+		if (ldist == 0) {
+			~sendMidiOff.value(~prevLow, ~midiOut, 0);
+		} {
+			~sendMidiOff.value(~prevHigh, ~midiOut, 0);
+		};
+	}, ~noteOffPath);
+
+	~clockSynth = Synth(\clock, [\preQuickBus, ~preQuickBus, \quickBus, ~quickBus, \preSlowBus, ~preSlowBus, \slowBus, ~slowBus, \resetBus, ~resetBus]);
+	~engineSynth = Synth(\engine, [\preQuickBus, ~preQuickBus, \quickBus, ~quickBus, \preSlowBus, ~preSlowBus, \slowBus, ~slowBus, \resetBus, ~resetBus], addAction: \addAfter);
 
 	"unremitting-transfer main loaded".postln;
 
