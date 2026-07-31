@@ -5,10 +5,12 @@
 
 s = Server.local;
 
-// Configure for dummy audio - no actual hardware needed
-s.options.device = nil;  // Use default
+// Configure to use JACK dummy driver - no actual audio hardware needed
+s.options.device = "dummy";
 s.options.numOutputBusChannels = 2;
 s.options.numInputBusChannels = 0;
+s.options.hardwareBufferSize = 1024;
+s.options.sampleRate = 48000;
 
 s.waitForBoot({
     "✓ Server booted successfully!".postln;
