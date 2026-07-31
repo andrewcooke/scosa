@@ -13,8 +13,14 @@ function(sc_check_sc_path path)
 
     get_filename_component(full_path "${path}" ABSOLUTE BASE_DIR "${CMAKE_SOURCE_DIR}")
 
-    # check main paths
-    if(NOT EXISTS "${full_path}/include/plugin_interface/SC_PlugIn.h")
+    # check main paths - support both source tree layout and system installation layout
+    if(EXISTS "${full_path}/include/plugin_interface/SC_PlugIn.h")
+        # Source tree layout
+        set(SC_INCLUDE_PREFIX "${full_path}/include" PARENT_SCOPE)
+    elseif(EXISTS "${full_path}/plugin_interface/SC_PlugIn.h")
+        # System installation layout
+        set(SC_INCLUDE_PREFIX "${full_path}" PARENT_SCOPE)
+    else()
         set(msg_end "\nPlease set SC_PATH to the root folder of the SuperCollider project relative to the folder containing this CMakeLists.txt file")
         message(FATAL_ERROR "Could not find SuperCollider3 headers at '${full_path}'.${msg_end}")
     endif()
@@ -39,11 +45,20 @@ function(sc_add_server_plugin_properties target is_supernova)
         set_target_properties(${target} PROPERTIES SUFFIX ".scx")
     endif()
 
-    target_include_directories(${target} PUBLIC
-        ${SC_PATH}/include/plugin_interface
-        ${SC_PATH}/include/common
-        ${SC_PATH}/common
-    )
+    # Use SC_INCLUDE_PREFIX if set, otherwise fall back to source tree layout
+    if(SC_INCLUDE_PREFIX)
+        target_include_directories(${target} PUBLIC
+            ${SC_INCLUDE_PREFIX}/plugin_interface
+            ${SC_INCLUDE_PREFIX}/common
+            ${SC_PATH}/common
+        )
+    else()
+        target_include_directories(${target} PUBLIC
+            ${SC_PATH}/include/plugin_interface
+            ${SC_PATH}/include/common
+            ${SC_PATH}/common
+        )
+    endif()
 
     # from CompilerConfig module
     sc_config_compiler_flags(${target})
