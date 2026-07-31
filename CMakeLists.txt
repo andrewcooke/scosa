@@ -4,6 +4,26 @@ set(project_name "SCosa")
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake_modules ${CMAKE_MODULE_PATH})
 set(CMAKE_CXX_STANDARD 17)
 
+# Try to find SuperCollider in standard system locations first
+if(NOT SC_PATH)
+    find_path(SC_INCLUDE_DIR
+        NAMES plugin_interface/SC_PlugIn.h
+        PATHS /usr/include/SuperCollider /usr/local/include/SuperCollider
+        DOC "SuperCollider include directory"
+    )
+    
+    if(SC_INCLUDE_DIR)
+        get_filename_component(SC_PATH "${SC_INCLUDE_DIR}" DIRECTORY)
+        message(STATUS "Found SuperCollider headers at: ${SC_PATH}")
+    else()
+        message(FATAL_ERROR "Could not find SuperCollider headers. Please install supercollider-devel or set SC_PATH manually.")
+    endif()
+else()
+    message(STATUS "Using provided SC_PATH: ${SC_PATH}")
+endif()
+
+set(SC_PATH "${SC_PATH}" CACHE PATH "Path to SuperCollider installation" FORCE)
+
 include(SuperColliderServerPlugin RESULT_VARIABLE server_plugin_found)
 if(NOT server_plugin_found)
     message(FATAL_ERROR "Could not find server plugin functions module")
@@ -14,24 +34,25 @@ if(NOT compiler_config_found)
     message(FATAL_ERROR "Could not find compiler config module")
 endif()
 
-# Windows - puts redistributable DLLs in install directory
-include(InstallRequiredSystemLibraries)
-
 sc_check_sc_path("${SC_PATH}")
-message(STATUS "Found SuperCollider: ${SC_PATH}")
-set(SC_PATH "${SC_PATH}" CACHE PATH
-    "Path to SuperCollider source. Relative paths are treated as relative to this script" FORCE)
 
-include("${SC_PATH}/SCVersion.txt")
-message(STATUS "Building plugins for SuperCollider version: ${SC_VERSION}")
+# Try to get version info if available
+if(EXISTS "${SC_PATH}/SCVersion.txt")
+    include("${SC_PATH}/SCVersion.txt")
+    message(STATUS "Building plugins for SuperCollider version: ${SC_VERSION}")
+else()
+    message(STATUS "SCVersion.txt not found, version info unavailable")
+endif()
 
 # set project here to avoid SCVersion.txt clobbering our version info
 project(${project_name})
 sc_do_initial_compiler_config() # do after setting project so compiler ID is available
 
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR NOT CMAKE_INSTALL_PREFIX)
-    message(WARNING "No install prefix provided, defaulting to $BUILD_DIR/install")
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Install prefix" FORCE)
+    # Default to user's SuperCollider extensions directory
+    set(DEFAULT_INSTALL_PREFIX "$ENV{HOME}/.local/share/SuperCollider/Extensions")
+    message(STATUS "No install prefix provided, defaulting to ${DEFAULT_INSTALL_PREFIX}")
+    set(CMAKE_INSTALL_PREFIX "${DEFAULT_INSTALL_PREFIX}" CACHE PATH "Install prefix" FORCE)
 endif()
 
 message(STATUS "Install directory set to: ${CMAKE_INSTALL_PREFIX}")
