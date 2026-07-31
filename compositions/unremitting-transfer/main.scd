@@ -1,7 +1,16 @@
 
-s.reboot;
+// Kill any existing server but don't reboot (to preserve JACK connection)
+Server.killAll;
 
 Window.closeAll;
+
+s = Server.local;
+
+// Configure to connect to existing JACK server (don't auto-start)
+s.options.numOutputBusChannels = 2;
+s.options.numInputBusChannels = 2;
+s.options.blockSize = 64;
+s.options.sampleRate = 48000;
 
 s.waitForBoot({
 
