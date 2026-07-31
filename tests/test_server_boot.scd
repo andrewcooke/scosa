@@ -6,7 +6,7 @@
 s = Server.local;
 
 // Use scsynth's internal null audio driver - no JACK or hardware needed
-Server.program = Server.program.replace("scsynth", "scsynth -H null");
+s.options.device = "NullAudioDriver";
 s.options.numOutputBusChannels = 2;
 s.options.numInputBusChannels = 0;
 s.options.blockSize = 64;
@@ -14,7 +14,7 @@ s.options.sampleRate = 48000;
 
 s.waitForBoot({
     "✓ Server booted successfully!".postln;
-    "Server options:".postln;
+    "Server running with null audio driver".postln;
     s.options.dump;
     
     1.wait;
