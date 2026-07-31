@@ -13,7 +13,7 @@ if(NOT SC_PATH)
     )
     
     if(SC_INCLUDE_DIR)
-        get_filename_component(SC_PATH "${SC_INCLUDE_DIR}" DIRECTORY)
+        set(SC_PATH "${SC_INCLUDE_DIR}")
         message(STATUS "Found SuperCollider headers at: ${SC_PATH}")
     else()
         message(FATAL_ERROR "Could not find SuperCollider headers. Please install supercollider-devel or set SC_PATH manually.")
