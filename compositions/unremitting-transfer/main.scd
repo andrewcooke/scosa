@@ -87,12 +87,18 @@ s.waitForBoot({
 	};
 
 	~sendMidiOn = { |note, bend, amp, midiOut, channel=0|
-		midiOut.bend(channel, bend);
-		midiOut.noteOn(channel, note, amp);
+		if (midiOut.notNil) {
+			midiOut.bend(channel, bend);
+			midiOut.noteOn(channel, note, amp);
+		} {
+			"MIDI output not available - would send note: % bend: % amp: %".format(note, bend, amp).postln;
+		};
 	};
 
 	~sendMidiOff = { |prev, midiOut, channel=0|
-		if (prev != 0) {midiOut.noteOff(channel, prev);};
+		if (midiOut.notNil) {
+			if (prev != 0) {midiOut.noteOff(channel, prev);};
+		};
 	};
 
 	~prevHigh = 0;
