@@ -5,11 +5,11 @@
 
 s = Server.local;
 
-// Configure to use JACK dummy driver - no actual audio hardware needed
-s.options.device = "dummy";
+// Use scsynth's internal null audio driver - no JACK or hardware needed
+Server.program = Server.program.replace("scsynth", "scsynth -H null");
 s.options.numOutputBusChannels = 2;
 s.options.numInputBusChannels = 0;
-s.options.hardwareBufferSize = 1024;
+s.options.blockSize = 64;
 s.options.sampleRate = 48000;
 
 s.waitForBoot({
