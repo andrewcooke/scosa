@@ -1,0 +1,111 @@
+CLASS:: Neutron
+summary:: MIDI configuration for Behringer Neutron synthesizer
+categories:: External Control>MIDI
+related:: Classes/MIDIOut
+
+DESCRIPTION::
+Neutron provides a convenient interface for configuring the Behringer Neutron synthesizer via MIDI. It handles common configuration tasks like setting split keyboard mode, note priority, and sending notes with pitch bend.
+
+CLASSMETHODS::
+
+METHOD:: new
+Create a new Neutron instance with an existing MIDIOut object.
+
+ARGUMENT:: midiOut
+A MIDIOut object connected to the Neutron.
+
+ARGUMENT:: channel
+MIDI channel (0-15). Default is 0.
+
+returns:: A new Neutron instance.
+
+METHOD:: connect
+Automatically find and connect to a Neutron MIDI device.
+
+ARGUMENT:: channel
+MIDI channel (0-15). Default is 0.
+
+returns:: A new Neutron instance, or nil if Neutron not found.
+
+INSTANCEMETHODS::
+
+METHOD:: setSplitMode
+Configure keyboard split mode.
+
+ARGUMENT:: splitNote
+MIDI note number (0-127) where the split occurs. Notes below this go to one voice, notes at or above go to another. Default is 60 (middle C).
+
+ARGUMENT:: enable
+Boolean to enable (true) or disable (false) split mode. Default is true.
+
+returns:: this (for method chaining)
+
+METHOD:: setNotePriority
+Set the note priority mode for monophonic playing.
+
+ARGUMENT:: priority
+Symbol: code::\lowest::, code::\highest::, or code::\last::. Default is code::\lowest::.
+
+returns:: this (for method chaining)
+
+METHOD:: allNotesOff
+Send all notes off and reset all controllers.
+
+returns:: this (for method chaining)
+
+METHOD:: resetBend
+Reset pitch bend to center position (8192).
+
+returns:: this (for method chaining)
+
+METHOD:: noteOn
+Send a note on message with pitch bend.
+
+ARGUMENT:: note
+MIDI note number (0-127).
+
+ARGUMENT:: bend
+Pitch bend value (0-16383, center is 8192). Default is 8192.
+
+ARGUMENT:: velocity
+Note velocity (0-127). Default is 127.
+
+returns:: this (for method chaining)
+
+METHOD:: noteOff
+Send a note off message.
+
+ARGUMENT:: note
+MIDI note number (0-127).
+
+ARGUMENT:: velocity
+Release velocity (0-127). Default is 0.
+
+returns:: this (for method chaining)
+
+METHOD:: printInfo
+Print current MIDI configuration to the post window.
+
+returns:: this
+
+EXAMPLES::
+
+code::
+// Automatically connect to Neutron
+~neutron = Neutron.connect(channel: 0);
+
+// Configure split keyboard at middle C with lowest note priority
+~neutron.setSplitMode(60, true).setNotePriority(\lowest);
+
+// Play a note with pitch bend
+~neutron.noteOn(60, 8351, 127);
+
+// Turn off all notes
+~neutron.allNotesOff;
+
+// Manual connection with existing MIDIOut
+MIDIClient.init;
+~midiOut = MIDIOut(0);
+~neutron = Neutron(~midiOut, channel: 0);
+~neutron.setNotePriority(\highest);
+::

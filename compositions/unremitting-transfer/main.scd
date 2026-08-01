@@ -60,22 +60,18 @@ s.waitForBoot({
 
 	s.sync;
 
-	MIDIClient.init;
-	~index = MIDIClient.destinations.detectIndex({ |ep| ep.device.contains("Neutron") });
-	if (~index.notNil) {
-		~midiOut = MIDIOut(~index);
-		~midiOut.connect(~index);
-		~allNotesOff.value(~midiOut, 0);
+	// Load Neutron class library
+	(thisProcess.nowExecutingPath.dirname +/+ "../../classes/Neutron.sc").load;
+	
+	// Connect to Neutron and configure
+	~neutron = Neutron.connect(channel: 0);
+	if (~neutron.notNil) {
+		~neutron
+			.setNotePriority(\lowest)
+			.allNotesOff;
+		~midiOut = ~neutron.midiOut;  // For compatibility with existing code
 	} {
-		"ERROR: Neutron not found in destinations.".warn;
-	};
-
-	~allNotesOff = { |midiOut, channel = 0|
-		if (midiOut.notNil) {
-			128.do({ |note| midiOut.noteOff(channel, note, 0) });
-			midiOut.control(channel, 123, 0);
-			midiOut.control(channel, 121, 0);
-		};
+		~midiOut = nil;
 	};
 
 	~freq2BentMidi = { |freq|
@@ -87,17 +83,16 @@ s.waitForBoot({
 	};
 
 	~sendMidiOn = { |note, bend, amp, midiOut, channel=0|
-		if (midiOut.notNil) {
-			midiOut.bend(channel, bend);
-			midiOut.noteOn(channel, note, amp);
+		if (~neutron.notNil) {
+			~neutron.noteOn(note, bend, amp);
 		} {
 			"MIDI output not available - would send note: % bend: % amp: %".format(note, bend, amp).postln;
 		};
 	};
 
 	~sendMidiOff = { |prev, midiOut, channel=0|
-		if (midiOut.notNil) {
-			if (prev != 0) {midiOut.noteOff(channel, prev);};
+		if (~neutron.notNil) {
+			if (prev != 0) {~neutron.noteOff(prev);};
 		};
 	};
 
