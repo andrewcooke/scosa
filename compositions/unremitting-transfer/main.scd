@@ -60,9 +60,6 @@ s.waitForBoot({
 
 	s.sync;
 
-	// Load Neutron class library
-	(thisProcess.nowExecutingPath.dirname +/+ "../../classes/Neutron.sc").load;
-	
 	// Connect to Neutron and configure
 	~neutron = Neutron.connect(channel: 0);
 	if (~neutron.notNil) {
