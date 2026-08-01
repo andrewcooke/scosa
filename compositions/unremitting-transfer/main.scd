@@ -67,6 +67,7 @@ s.waitForBoot({
 	~neutron = Neutron.connect(channel: 0);
 	if (~neutron.notNil) {
 		~neutron
+			.setSplitMode(57, true)  // Split keyboard at A3 (MIDI note 57)
 			.setNotePriority(\lowest)
 			.allNotesOff;
 		~midiOut = ~neutron.midiOut;  // For compatibility with existing code
@@ -82,7 +83,7 @@ s.waitForBoot({
 		[note.asInteger, bend.asInteger];
 	};
 
-	~sendMidiOn = { |note, bend, amp, midiOut, channel=0|
+	~sendMidiOn = { |note, bend, amp|
 		if (~neutron.notNil) {
 			~neutron.noteOn(note, bend, amp);
 		} {
@@ -90,7 +91,7 @@ s.waitForBoot({
 		};
 	};
 
-	~sendMidiOff = { |prev, midiOut, channel=0|
+	~sendMidiOff = { |prev|
 		if (~neutron.notNil) {
 			if (prev != 0) {~neutron.noteOff(prev);};
 		};
@@ -105,10 +106,10 @@ s.waitForBoot({
 		# note, bend = ~freq2BentMidi.value(freq);
 		[note, bend, dist, ldist].postln;
 		if (ldist == 0) {
-			~sendMidiOn.value(note, bend, 127, ~midiOut, 0);
+			~sendMidiOn.value(note, bend, 127);
 			~prevLow = note;
 		} {
-			~sendMidiOn.value(note, bend, 127, ~midiOut, 0);
+			~sendMidiOn.value(note, bend, 127);
 			~prevHigh = note;
 		};
 	}, ~noteOnPath);
@@ -117,9 +118,9 @@ s.waitForBoot({
 		var path, node, reply, ldist;
 		# path, node, reply, ldist = msg;
 		if (ldist == 0) {
-			~sendMidiOff.value(~prevLow, ~midiOut, 0);
+			~sendMidiOff.value(~prevLow);
 		} {
-			~sendMidiOff.value(~prevHigh, ~midiOut, 0);
+			~sendMidiOff.value(~prevHigh);
 		};
 	}, ~noteOffPath);
 
