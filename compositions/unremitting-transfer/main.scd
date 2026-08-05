@@ -17,7 +17,7 @@ s.waitForBoot({
         ~noteOnPath = '/justo/noteOn';
         ~noteOffPath = '/justo/noteOff';
 
-        ~bpm = 20;             // trigger for quick notes
+        ~bpm = 600;            // trigger for quick notes
         ~rhythmLength = 4;     // ratio for trigger for slow notes 
         ~gap = 1000;           // downtime so triggers register
 	~hold = 0.75;          // not held for full interval
@@ -50,8 +50,8 @@ s.waitForBoot({
                 var slowOnTrig = In.ar(slowOnBus);
                 var slowOffTrig = In.ar(slowOffBus);
                 var resetTrig = In.ar(resetBus);
-                var leftHand = Justo.ar(slowOnTrig, maxSize: ~rhythmLength, maxRatio: 2, root: 110, maxDistance: 10, mutateAll: 0.1, seed: ~seed);
-                var rightHand = Justo.ar(quickOnTrig, maxSize: ~rhythmLength, maxRatio: 3, root: 660, maxDistance: ~maxDist, mutateBad: 1, mutateAll: 0.1, reset: ~rhythmLength, reverse: 0, numerator: leftHand.numerator, denominator: leftHand.denominator, seed: ~seed);
+                var leftHand = Justo.ar(slowOnTrig, maxSize: ~rhythmLength, maxRatio: 2, root: 110, maxDistance: 10, mutateAll: 0.03, seed: ~seed);
+                var rightHand = Justo.ar(quickOnTrig, maxSize: ~rhythmLength, maxRatio: 3, root: 660, maxDistance: ~maxDist, mutateBad: 0.1, mutateAll: 0.03, reset: ~rhythmLength, reverse: 0, numerator: leftHand.numerator, denominator: leftHand.denominator, seed: ~seed);
                 SendReply.ar(slowOffTrig,  ~noteOffPath, [0]);
                 SendReply.ar(slowOnTrig,  ~noteOnPath, [leftHand.frequency,  leftHand.distance, leftHand.numerator, leftHand.denominator, 0, 0]);
                 SendReply.ar(quickOffTrig,  ~noteOffPath, [1]);
